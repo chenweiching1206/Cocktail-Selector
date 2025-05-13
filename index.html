@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cocktail Selector</title>
+  <style>
+    #user-avatar {
+      position: absolute;
+      top: 1em;
+      right: 1em;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: none;
+    }
+    .active { display: block; }
+    section { display: none; }
+  </style>
+</head>
+<body>
+  <img id="user-avatar" alt="User Avatar" />
+  <nav>
+    <a href="#" onclick="showSection('home')">主頁</a>
+    <a href="#" onclick="showSection('custom')">自訂調酒</a>
+    <a href="#" onclick="showSection('search')">搜尋</a>
+    <a href="#" onclick="showSection('ranking')">排行榜</a>
+    <button id="sign-in">登入 Google 帳號</button>
+  </nav>
+
+  <div class="container">
+    <section id="home" class="active">
+      <h1>探索你的專屬調酒</h1>
+      <ul id="cocktails-container"></ul>
+    </section>
+
+    <section id="custom">
+      <h2>自訂調酒</h2>
+      <form id="cocktail-form">
+        <input type="text" name="name" placeholder="調酒名稱" required />
+        <textarea name="taste" placeholder="口感描述" required></textarea>
+        <select name="level">
+          <option value="low">低酒精</option>
+          <option value="medium">中等酒精</option>
+          <option value="high">高酒精</option>
+        </select>
+        <label><input type="checkbox" name="isPublic" /> 公開酒譜</label>
+        <input type="range" name="price" min="100" max="1000" step="50" oninput="document.getElementById('price-value').textContent = this.value" />
+        <span>價錢: <span id="price-value">100</span> 元</span>
+        <input type="file" name="photos" accept="image/*" multiple />
+        <button type="submit">儲存</button>
+      </form>
+    </section>
+
+    <section id="search">
+      <h2>搜尋調酒</h2>
+      <input type="text" placeholder="預算（例如 300）" />
+      <select>
+        <option value="low">低酒精</option>
+        <option value="medium">中酒精</option>
+        <option value="high">高酒精</option>
+      </select>
+      <button>推薦調酒</button>
+    </section>
+
+    <section id="ranking">
+      <h2>調酒排行榜</h2>
+      <ul id="rankings-container"></ul>
+    </section>
+
+    <section>
+      <h2>註冊人數</h2>
+      <p id="user-count">註冊人數: 0</p>
+    </section>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.appspot.com",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+    const storage = getStorage();
+
+    const avatar = document.getElementById("user-avatar");
+    const signInBtn = document.getElementById("sign-in");
+    const cocktailForm = document.getElementById("cocktail-form");
+    const cocktailsContainer = document.getElementById("cocktails-container");
+    const rankingsContainer = document.getElementById("rankings-container");
+    const userCountElement = document.getElementById("user-count");
+
+    signInBtn.addEventListener("click", async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        avatar.src = user.photoURL;
+        avatar.style.display = "block";
+        signInBtn.style.display = "none";
+        loadCocktails();
+        loadRankings();
+        updateUserCount();
+      } catch (error) {
+        alert("登入失敗：" + error.message);
+      }
+    });
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        avatar.src = user.photoURL;
+        avatar.style.display = "block";
+        signInBtn.style.display = "none";
+        loadCocktails();
+        loadRankings();
+        updateUserCount();
+      }
+    });
+
+    cocktailForm?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const name = form["name"].value;
+      const taste = form["taste"].value;
+      const level = form["level"].value;
+      const isPublic = form["isPublic"].checked;
+      const price = form["price"].value;
+      const files = form["photos"].files;
+
+      const imageUrls = [];
+      for (const file of files) {
+        const storageRef = ref(storage, `cocktails/${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+        imageUrls.push(url);
+      }
+
+      await addDoc(collection(db, "cocktails"), {
+        name, taste, level, isPublic, price, imageUrls, votes: 0
+      });
+
+      alert("調酒已儲存！");
+      form.reset();
+      loadCocktails();
+      if (isPublic) loadRankings();
+    });
+
+    async function loadCocktails() {
+      const snapshot = await getDocs(collection(db, "cocktails"));
+      cocktailsContainer.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const c = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <h3>${c.name}</h3>
+          <p>${c.taste}</p>
+          <p>酒精濃度: ${c.level}</p>
+          <p>價錢: ${c.price} 元</p>
+          <button class="vote-button" data-id="${docSnap.id}">+1</button> <span>${c.votes} 票</span>
+        `;
+        li.querySelector(".vote-button").addEventListener("click", () => vote(docSnap.id));
+        cocktailsContainer.appendChild(li);
+      });
+    }
+
+    async function vote(id) {
+      const refDoc = doc(db, "cocktails", id);
+      const docSnap = await getDocs(collection(db, "cocktails"));
+      const target = docSnap.docs.find(d => d.id === id);
+      if (target) {
+        const votes = target.data().votes + 1;
+        await updateDoc(refDoc, { votes });
+        loadCocktails();
+        loadRankings();
+      }
+    }
+
+    async function loadRankings() {
+      const snapshot = await getDocs(collection(db, "cocktails"));
+      rankingsContainer.innerHTML = "";
+      const sorted = snapshot.docs.filter(d => d.data().isPublic).sort((a, b) => b.data().votes - a.data().votes);
+      sorted.forEach((docSnap, index) => {
+        const c = docSnap.data();
+        const li = document.createElement("li");
+        li.innerHTML = `
+          ${index + 1}. ${c.name} <button class="vote-button" data-id="${docSnap.id}">+1</button> <span>${c.votes} 票</span>
+        `;
+        li.querySelector(".vote-button").addEventListener("click", () => vote(docSnap.id));
+        rankingsContainer.appendChild(li);
+      });
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function updateUserCount() {
+      // 無法用 Firebase 客戶端 SDK 直接取得所有使用者，請在 Firebase Admin SDK 上設定 Cloud Function 回傳數字
+      userCountElement.textContent = '註冊人數: (請用 Cloud Function 取得)';
+    }
+  </script>
+</body>
+</html>
