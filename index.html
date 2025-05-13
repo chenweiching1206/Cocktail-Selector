@@ -1,216 +1,235 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cocktail Selector</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>調酒天地</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f4f1ec;
+      color: #333;
+    }
+
+    header {
+      background-color: #ffcc00;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    #user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    #login-btn {
+      padding: 0.6rem 1.2rem;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
     #user-avatar {
-      position: absolute;
-      top: 1em;
-      right: 1em;
       width: 40px;
       height: 40px;
       border-radius: 50%;
       display: none;
     }
-    .active { display: block; }
-    section { display: none; }
+
+    .beer-bg {
+      position: relative;
+      height: 300px;
+      background: linear-gradient(to top, #f7d774, #fff3b0);
+      overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute;
+      bottom: 0;
+      background-color: white;
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: rise 5s infinite ease-in;
+    }
+
+    @keyframes rise {
+      0% {
+        transform: translateY(0);
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(-300px);
+        opacity: 0;
+      }
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #fff9d6;
+      box-shadow: inset 0 -1px 0 #e0dcbf;
+    }
+
+    nav button {
+      flex: 1;
+      padding: 1rem;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    nav button:hover {
+      background-color: #ffe577;
+    }
+
+    .section {
+      display: none;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .active {
+      display: block;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+    }
+
+    input, select, textarea, button[type="submit"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    button[type="submit"] {
+      background-color: #ffcc00;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    ul li {
+      list-style: none;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    ul li span {
+      margin-left: 1rem;
+    }
   </style>
 </head>
 <body>
-  <img id="user-avatar" alt="User Avatar" />
+  <header>
+    <div id="logo">調酒天地</div>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="頭像">
+      <button id="login-btn">登入</button>
+    </div>
+  </header>
+
+  <div class="beer-bg" id="beer-bg"></div>
+
   <nav>
-    <a href="#" onclick="showSection('home')">主頁</a>
-    <a href="#" onclick="showSection('custom')">自訂調酒</a>
-    <a href="#" onclick="showSection('search')">搜尋</a>
-    <a href="#" onclick="showSection('ranking')">排行榜</a>
-    <button id="sign-in">登入 Google 帳號</button>
+    <button onclick="switchPage('page1')">自訂調酒</button>
+    <button onclick="switchPage('page2')">搜尋推薦</button>
+    <button onclick="switchPage('page3')">排行榜</button>
   </nav>
 
-  <div class="container">
-    <section id="home" class="active">
-      <h1>探索你的專屬調酒</h1>
-      <ul id="cocktails-container"></ul>
-    </section>
+  <section id="page1" class="section active">
+    <h2>自訂你的調酒</h2>
+    <form>
+      <label>調酒名稱<input type="text" required></label>
+      <label>內容物<input type="text" required></label>
+      <label>比例（例如 2:1:1）<input type="text"></label>
+      <label>口感描述<textarea rows="3"></textarea></label>
+      <label>價錢估計<input type="range" min="100" max="1000" step="50"></label>
+      <label>是否公開<input type="checkbox"></label>
+      <button type="submit">儲存酒譜</button>
+    </form>
+  </section>
 
-    <section id="custom">
-      <h2>自訂調酒</h2>
-      <form id="cocktail-form">
-        <input type="text" name="name" placeholder="調酒名稱" required />
-        <textarea name="taste" placeholder="口感描述" required></textarea>
-        <select name="level">
-          <option value="low">低酒精</option>
-          <option value="medium">中等酒精</option>
-          <option value="high">高酒精</option>
-        </select>
-        <label><input type="checkbox" name="isPublic" /> 公開酒譜</label>
-        <input type="range" name="price" min="100" max="1000" step="50" oninput="document.getElementById('price-value').textContent = this.value" />
-        <span>價錢: <span id="price-value">100</span> 元</span>
-        <input type="file" name="photos" accept="image/*" multiple />
-        <button type="submit">儲存</button>
-      </form>
-    </section>
+  <section id="page2" class="section">
+    <h2>搜尋推薦調酒</h2>
+    <form>
+      <label>預算（元）<input type="number" min="100" step="50"></label>
+      <label>酒精濃度（%）<input type="number" min="0" max="100"></label>
+      <button type="submit">搜尋推薦</button>
+    </form>
+    <div id="recommendation-list">搜尋結果會出現在這裡</div>
+  </section>
 
-    <section id="search">
-      <h2>搜尋調酒</h2>
-      <input type="text" placeholder="預算（例如 300）" />
-      <select>
-        <option value="low">低酒精</option>
-        <option value="medium">中酒精</option>
-        <option value="high">高酒精</option>
-      </select>
-      <button>推薦調酒</button>
-    </section>
+  <section id="page3" class="section">
+    <h2>調酒排行榜</h2>
+    <ul>
+      <li><strong>莫西多</strong> <button onclick="vote(this)">+1</button> <span>票數：12</span></li>
+      <li><strong>琴通寧</strong> <button onclick="vote(this)">+1</button> <span>票數：9</span></li>
+      <li><strong>長島冰茶</strong> <button onclick="vote(this)">+1</button> <span>票數：15</span></li>
+    </ul>
+  </section>
 
-    <section id="ranking">
-      <h2>調酒排行榜</h2>
-      <ul id="rankings-container"></ul>
-    </section>
-
-    <section>
-      <h2>註冊人數</h2>
-      <p id="user-count">註冊人數: 0</p>
-    </section>
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-storage.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
-      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
-      projectId: "cocktail-selector-a1b46",
-      storageBucket: "cocktail-selector-a1b46.appspot.com",
-      messagingSenderId: "213382733661",
-      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
-      measurementId: "G-LC2T6DR3HB"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getFirestore();
-    const storage = getStorage();
-
-    const avatar = document.getElementById("user-avatar");
-    const signInBtn = document.getElementById("sign-in");
-    const cocktailForm = document.getElementById("cocktail-form");
-    const cocktailsContainer = document.getElementById("cocktails-container");
-    const rankingsContainer = document.getElementById("rankings-container");
-    const userCountElement = document.getElementById("user-count");
-
-    signInBtn.addEventListener("click", async () => {
-      const provider = new GoogleAuthProvider();
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        avatar.src = user.photoURL;
-        avatar.style.display = "block";
-        signInBtn.style.display = "none";
-        loadCocktails();
-        loadRankings();
-        updateUserCount();
-      } catch (error) {
-        alert("登入失敗：" + error.message);
-      }
-    });
-
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        avatar.src = user.photoURL;
-        avatar.style.display = "block";
-        signInBtn.style.display = "none";
-        loadCocktails();
-        loadRankings();
-        updateUserCount();
-      }
-    });
-
-    cocktailForm?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const name = form["name"].value;
-      const taste = form["taste"].value;
-      const level = form["level"].value;
-      const isPublic = form["isPublic"].checked;
-      const price = form["price"].value;
-      const files = form["photos"].files;
-
-      const imageUrls = [];
-      for (const file of files) {
-        const storageRef = ref(storage, `cocktails/${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(snapshot.ref);
-        imageUrls.push(url);
-      }
-
-      await addDoc(collection(db, "cocktails"), {
-        name, taste, level, isPublic, price, imageUrls, votes: 0
-      });
-
-      alert("調酒已儲存！");
-      form.reset();
-      loadCocktails();
-      if (isPublic) loadRankings();
-    });
-
-    async function loadCocktails() {
-      const snapshot = await getDocs(collection(db, "cocktails"));
-      cocktailsContainer.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const c = docSnap.data();
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <h3>${c.name}</h3>
-          <p>${c.taste}</p>
-          <p>酒精濃度: ${c.level}</p>
-          <p>價錢: ${c.price} 元</p>
-          <button class="vote-button" data-id="${docSnap.id}">+1</button> <span>${c.votes} 票</span>
-        `;
-        li.querySelector(".vote-button").addEventListener("click", () => vote(docSnap.id));
-        cocktailsContainer.appendChild(li);
-      });
-    }
-
-    async function vote(id) {
-      const refDoc = doc(db, "cocktails", id);
-      const docSnap = await getDocs(collection(db, "cocktails"));
-      const target = docSnap.docs.find(d => d.id === id);
-      if (target) {
-        const votes = target.data().votes + 1;
-        await updateDoc(refDoc, { votes });
-        loadCocktails();
-        loadRankings();
-      }
-    }
-
-    async function loadRankings() {
-      const snapshot = await getDocs(collection(db, "cocktails"));
-      rankingsContainer.innerHTML = "";
-      const sorted = snapshot.docs.filter(d => d.data().isPublic).sort((a, b) => b.data().votes - a.data().votes);
-      sorted.forEach((docSnap, index) => {
-        const c = docSnap.data();
-        const li = document.createElement("li");
-        li.innerHTML = `
-          ${index + 1}. ${c.name} <button class="vote-button" data-id="${docSnap.id}">+1</button> <span>${c.votes} 票</span>
-        `;
-        li.querySelector(".vote-button").addEventListener("click", () => vote(docSnap.id));
-        rankingsContainer.appendChild(li);
-      });
-    }
-
-    function showSection(id) {
-      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  <script>
+    function switchPage(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    function updateUserCount() {
-      // 無法用 Firebase 客戶端 SDK 直接取得所有使用者，請在 Firebase Admin SDK 上設定 Cloud Function 回傳數字
-      userCountElement.textContent = '註冊人數: (請用 Cloud Function 取得)';
+    function vote(button) {
+      const span = button.nextElementSibling;
+      let current = parseInt(span.textContent.replace(/[^0-9]/g, ''));
+      span.textContent = `票數：${current + 1}`;
+    }
+
+    document.getElementById('login-btn').addEventListener('click', () => {
+      const avatar = document.getElementById('user-avatar');
+      avatar.src = 'https://i.pravatar.cc/100';
+      avatar.style.display = 'inline';
+      document.getElementById('login-btn').style.display = 'none';
+    });
+
+    const bg = document.getElementById('beer-bg');
+    for (let i = 0; i < 50; i++) {
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.style.left = Math.random() * 100 + '%';
+      bubble.style.animationDuration = (2 + Math.random() * 3) + 's';
+      const size = 5 + Math.random() * 10;
+      bubble.style.width = bubble.style.height = size + 'px';
+      bg.appendChild(bubble);
     }
   </script>
 </body>
 </html>
+
