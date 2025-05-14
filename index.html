@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -13,147 +12,141 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-```
-body {
-  background-color: #f4f1ec;
-  color: #333;
-}
+    body {
+      background-color: #f4f1ec;
+      color: #333;
+    }
 
-header {
-  background-color: #ffcc00;
-  padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+    header {
+      background-color: #ffcc00;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
 
-#logo {
-  font-size: 1.8rem;
-  font-weight: bold;
-}
+    #logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
 
-#user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+    #user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
 
-#login-btn {
-  padding: 0.6rem 1.2rem;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
+    #login-btn, #logout-btn {
+      padding: 0.6rem 1.2rem;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
 
-#user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: none;
-}
+    #user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: none;
+    }
 
-.beer-bg {
-  position: relative;
-  height: 300px;
-  background: linear-gradient(to top, #f7d774, #fff3b0);
-  overflow: hidden;
-}
+    .beer-bg {
+      position: relative;
+      height: 300px;
+      background: linear-gradient(to top, #f7d774, #fff3b0);
+      overflow: hidden;
+    }
 
-.bubble {
-  position: absolute;
-  bottom: 0;
-  background-color: white;
-  border-radius: 50%;
-  opacity: 0.7;
-  animation: rise 5s infinite ease-in;
-}
+    .bubble {
+      position: absolute;
+      bottom: 0;
+      background-color: white;
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: rise 5s infinite ease-in;
+    }
 
-@keyframes rise {
-  0% {
-    transform: translateY(0);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translateY(-300px);
-    opacity: 0;
-  }
-}
+    @keyframes rise {
+      0% { transform: translateY(0); opacity: 0.7; }
+      100% { transform: translateY(-300px); opacity: 0; }
+    }
 
-nav {
-  display: flex;
-  justify-content: center;
-  background-color: #fff9d6;
-  box-shadow: inset 0 -1px 0 #e0dcbf;
-}
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #fff9d6;
+      box-shadow: inset 0 -1px 0 #e0dcbf;
+    }
 
-nav button {
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  background: none;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
+    nav button {
+      flex: 1;
+      padding: 1rem;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
 
-nav button:hover {
-  background-color: #ffe577;
-}
+    nav button:hover {
+      background-color: #ffe577;
+    }
 
-.section {
-  display: none;
-  padding: 2rem;
-  max-width: 800px;
-  margin: auto;
-}
+    .section {
+      display: none;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
 
-.active {
-  display: block;
-}
+    .active {
+      display: block;
+    }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
 
-label {
-  display: flex;
-  flex-direction: column;
-  font-weight: bold;
-}
+    label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+    }
 
-input, select, textarea, button[type="submit"] {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
+    input, select, textarea, button[type="submit"] {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
 
-button[type="submit"] {
-  background-color: #ffcc00;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
+    button[type="submit"] {
+      background-color: #ffcc00;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
 
-ul li {
-  list-style: none;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    ul li {
+      list-style: none;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-ul li span {
-  margin-left: 1rem;
-}
-```
-
+    ul li span {
+      margin-left: 1rem;
+    }
   </style>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
 </head>
 <body>
   <header>
@@ -161,6 +154,7 @@ ul li span {
     <div id="user-info">
       <img id="user-avatar" src="" alt="頭像">
       <button id="login-btn">登入</button>
+      <button id="logout-btn" style="display: none;">登出</button>
     </div>
   </header>
 
@@ -181,7 +175,7 @@ ul li span {
       <label>口感描述<textarea rows="3"></textarea></label>
       <label>價錢估計<input type="range" min="100" max="1000" step="50"></label>
       <label>是否公開<input type="checkbox"></label>
-      <button type="submit">儲存酒譜</button>
+      <button type="submit">儲存酒計</button>
     </form>
   </section>
 
@@ -205,6 +199,59 @@ ul li span {
   </section>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.appspot.com",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
+        const avatar = document.getElementById('user-avatar');
+        avatar.src = user.photoURL;
+        avatar.style.display = 'inline';
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline';
+      } catch (error) {
+        console.error("登入失敗", error);
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await auth.signOut();
+        document.getElementById('user-avatar').style.display = 'none';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+      } catch (error) {
+        console.error("登出失敗", error);
+      }
+    });
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        const avatar = document.getElementById('user-avatar');
+        avatar.src = user.photoURL;
+        avatar.style.display = 'inline';
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline';
+      } else {
+        document.getElementById('user-avatar').style.display = 'none';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+      }
+    });
+
     function switchPage(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
@@ -215,13 +262,6 @@ ul li span {
       let current = parseInt(span.textContent.replace(/[^0-9]/g, ''));
       span.textContent = `票數：${current + 1}`;
     }
-
-    document.getElementById('login-btn').addEventListener('click', () => {
-      const avatar = document.getElementById('user-avatar');
-      avatar.src = 'https://i.pravatar.cc/100';
-      avatar.style.display = 'inline';
-      document.getElementById('login-btn').style.display = 'none';
-    });
 
     const bg = document.getElementById('beer-bg');
     for (let i = 0; i < 50; i++) {
@@ -234,7 +274,6 @@ ul li span {
       bg.appendChild(bubble);
     }
   </script>
-
 </body>
 </html>
 
