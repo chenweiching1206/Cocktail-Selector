@@ -111,7 +111,6 @@
     .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; }
   </style>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
@@ -139,6 +138,7 @@
       <label>調酒名稱<input id="name" type="text" required></label>
       <label>內容物<input id="ingredients" type="text" required></label>
       <label>比例<input id="ratio" type="text"></label>
+      <label>酒精度數<input id="abv" type="number" min="0" max="100"></label>
       <label>口感描述<textarea id="description" rows="3"></textarea></label>
       <label>價錢估計
         <input id="price" type="range" min="100" max="1000" step="50" value="300" oninput="priceValue.innerText = this.value + ' 元'">
@@ -162,11 +162,7 @@
 
   <section id="page3" class="section">
     <h2>調酒排行榜</h2>
-    <ul id="ranking-list">
-      <li><strong>莫西多</strong> <button onclick="vote(this)">+1</button> <span>票數：12</span></li>
-      <li><strong>琴通寧</strong> <button onclick="vote(this)">+1</button> <span>票數：9</span></li>
-      <li><strong>長島冰茶</strong> <button onclick="vote(this)">+1</button> <span>票數：15</span></li>
-    </ul>
+    <ul id="ranking-list"></ul>
   </section>
 
   <script>
@@ -183,6 +179,7 @@
     const auth = firebase.auth();
 
     const cocktailData = [];
+    const userVotes = {};
 
     document.getElementById('login-btn').addEventListener('click', async () => {
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -215,11 +212,12 @@
       const name = document.getElementById('name').value.trim();
       const ingredients = document.getElementById('ingredients').value.trim();
       const ratio = document.getElementById('ratio').value;
+      const abv = document.getElementById('abv').value;
       const description = document.getElementById('description').value;
       const price = document.getElementById('price').value;
       const isPublic = document.getElementById('isPublic').checked;
 
-      const cocktail = { name, ingredients, ratio, description, price, votes: 0, isPublic };
+      const cocktail = { name, ingredients, ratio, abv, description, price: parseInt(price), votes: 0, isPublic };
       cocktailData.push(cocktail);
       addToCustomList(cocktail);
       if (isPublic) addToRanking(cocktail);
@@ -231,21 +229,44 @@
       const li = document.createElement('li');
       li.innerHTML = `<span class="cocktail-item">${cocktail.name}</span>`;
       li.querySelector('span').onclick = () => {
-        alert(`名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n描述：${cocktail.description}\n價錢：${cocktail.price} 元`);
+        alert(`名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n酒精度數：${cocktail.abv}%\n描述：${cocktail.description}\n價錢：${cocktail.price} 元`);
       };
       document.getElementById('custom-list').appendChild(li);
     }
 
     function addToRanking(cocktail) {
       const li = document.createElement('li');
-      li.innerHTML = `<strong>${cocktail.name}</strong> <button onclick="vote(this)">+1</button> <span>票數：0</span>`;
+      li.innerHTML = `<strong class="cocktail-item">${cocktail.name}</strong> <button onclick="vote(this, '${cocktail.name}')">+1</button> <span>票數：0</span>`;
+      li.querySelector('strong').onclick = () => {
+        alert(`名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n酒精度數：${cocktail.abv}%\n描述：${cocktail.description}\n價錢：${cocktail.price} 元`);
+      };
       document.getElementById('ranking-list').appendChild(li);
     }
 
-    function vote(button) {
+    function vote(button, name) {
+      const user = auth.currentUser;
+      if (!user) return alert("請先登入");
+      const uid = user.uid;
+      if (!userVotes[uid]) userVotes[uid] = new Set();
+      if (userVotes[uid].has(name)) return alert("你已對此酒投過票了");
+
       const span = button.nextElementSibling;
       let count = parseInt(span.textContent.replace(/[^\d]/g, ''));
-      span.textContent = `票數：${count + 1}`;
+      span.textContent = `票數：${++count}`;
+      userVotes[uid].add(name);
+
+      sortRanking();
+    }
+
+    function sortRanking() {
+      const list = document.getElementById('ranking-list');
+      const items = Array.from(list.children);
+      items.sort((a, b) => {
+        const votesA = parseInt(a.querySelector('span').textContent.replace(/[^\d]/g, ''));
+        const votesB = parseInt(b.querySelector('span').textContent.replace(/[^\d]/g, ''));
+        return votesB - votesA;
+      });
+      items.forEach(item => list.appendChild(item));
     }
 
     document.getElementById('search-form').addEventListener('submit', e => {
@@ -253,7 +274,7 @@
       const budget = parseInt(document.getElementById('budget').value);
       const result = cocktailData.filter(c => c.isPublic && c.price <= budget);
       const container = document.getElementById('recommendation-list');
-      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => `<div>${c.name} - ${c.price} 元</div>`).join('');
+      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => `<div class="cocktail-item" onclick="alert('名稱：${c.name}\\n內容物：${c.ingredients}\\n比例：${c.ratio}\\n酒精度數：${c.abv}%\\n描述：${c.description}\\n價錢：${c.price} 元')">${c.name} - ${c.price} 元</div>`).join('');
     });
 
     const bg = document.getElementById('beer-bg');
