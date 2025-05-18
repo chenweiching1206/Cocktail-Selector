@@ -1,271 +1,185 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>調酒天地</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>調酒推薦系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f4f1ec; color: #333; }
-
-    header {
-      background-color: #ffcc00;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    body {
+      background-color: #f8f9fa;
+      padding: 20px;
     }
-
-    #logo { font-size: 1.8rem; font-weight: bold; }
-    #user-info { display: flex; align-items: center; gap: 1rem; }
-    #login-btn, #logout-btn {
-      padding: 0.6rem 1.2rem;
-      background-color: #333; color: white;
-      border: none; border-radius: 5px; cursor: pointer;
-    }
-
-    #user-avatar {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      display: none;
-    }
-
-    .beer-bg {
-      position: relative;
-      height: 300px;
-      background: linear-gradient(to top, #f7d774, #fff3b0);
-      overflow: hidden;
-    }
-
-    .bubble {
-      position: absolute;
-      bottom: 0;
-      background-color: white;
-      border-radius: 50%;
-      opacity: 0.7;
-      animation: rise 5s infinite ease-in;
-    }
-
-    @keyframes rise {
-      0% { transform: translateY(0); opacity: 0.7; }
-      100% { transform: translateY(-300px); opacity: 0; }
-    }
-
-    nav {
-      display: flex;
-      justify-content: center;
-      background-color: #fff9d6;
-      box-shadow: inset 0 -1px 0 #e0dcbf;
-    }
-
-    nav button {
-      flex: 1;
-      padding: 1rem;
-      border: none;
-      background: none;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    nav button:hover {
-      background-color: #ffe577;
-    }
-
-    .section {
-      display: none;
-      padding: 2rem;
-      max-width: 800px;
+    .container {
+      max-width: 900px;
       margin: auto;
     }
-
-    .active { display: block; }
-
-    form { display: flex; flex-direction: column; gap: 1rem; }
-    label { display: flex; flex-direction: column; font-weight: bold; }
-
-    input, select, textarea, button[type="submit"] {
-      padding: 0.5rem; font-size: 1rem;
-      border-radius: 5px; border: 1px solid #ccc;
+    .card {
+      margin-bottom: 20px;
     }
-
-    button[type="submit"] {
-      background-color: #ffcc00;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
+    .card-title {
+      font-size: 1.25rem;
     }
-
-    ul li {
-      list-style: none;
-      margin-bottom: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .tag {
+      display: inline-block;
+      background-color: #dee2e6;
+      border-radius: 20px;
+      padding: 2px 12px;
+      font-size: 0.85rem;
+      margin-right: 5px;
     }
-
-    ul li span { margin-left: 1rem; }
-
-    .price-output { font-weight: bold; }
-    .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; }
   </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <header>
-    <div id="logo">調酒天地</div>
-    <div id="user-info">
-      <img id="user-avatar" src="" alt="頭像" />
-      <button id="login-btn">登入</button>
-      <button id="logout-btn" style="display: none;">登出</button>
+<div class="container">
+  <h1 class="text-center mb-4">調酒推薦系統</h1>
+
+  <div id="auth-section" class="mb-3 text-end"></div>
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">新增酒譜</h5>
+      <input id="drink-name" class="form-control mb-2" placeholder="酒名">
+      <input id="alcohol" type="number" class="form-control mb-2" placeholder="酒精濃度">
+      <input id="budget" type="number" class="form-control mb-2" placeholder="預算">
+      <input id="tags" class="form-control mb-2" placeholder="標籤（用逗號分隔）">
+      <textarea id="recipe" class="form-control mb-2" placeholder="製作方法"></textarea>
+      <div class="form-check mb-2">
+        <input class="form-check-input" type="checkbox" id="public">
+        <label class="form-check-label" for="public">設為公開</label>
+      </div>
+      <button id="save-drink" class="btn btn-primary">儲存酒譜</button>
     </div>
-  </header>
+  </div>
 
-  <div class="beer-bg" id="beer-bg"></div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">推薦搜尋</h5>
+      <input id="search-budget" type="number" class="form-control mb-2" placeholder="預算限制">
+      <input id="search-alcohol" type="number" class="form-control mb-2" placeholder="酒精濃度上限">
+      <button id="search-button" class="btn btn-success">搜尋推薦</button>
+      <div id="search-results" class="mt-3"></div>
+    </div>
+  </div>
 
-  <nav>
-    <button onclick="switchPage('page1')">自訂調酒</button>
-    <button onclick="switchPage('page2')">搜尋推薦</button>
-    <button onclick="switchPage('page3')">排行榜</button>
-  </nav>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">公開排行榜</h5>
+      <div id="ranking-list"></div>
+    </div>
+  </div>
+</div>
 
-  <section id="page1" class="section active">
-    <h2>自訂你的調酒</h2>
-    <form id="custom-form">
-      <label>調酒名稱<input id="name" type="text" required></label>
-      <label>內容物<input id="ingredients" type="text" required></label>
-      <label>比例<input id="ratio" type="text"></label>
-      <label>口感描述<textarea id="description" rows="3"></textarea></label>
-      <label>價錢估計
-        <input id="price" type="range" min="100" max="1000" step="50" value="300" oninput="priceValue.innerText = this.value + ' 元'">
-        <span id="priceValue" class="price-output">300 元</span>
-      </label>
-      <label>是否公開<input id="isPublic" type="checkbox"></label>
-      <button type="submit">儲存酒譜</button>
-    </form>
-    <ul id="custom-list"></ul>
-  </section>
+<script>
+  const firebaseConfig = {
+    // your firebase config
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-  <section id="page2" class="section">
-    <h2>搜尋推薦調酒</h2>
-    <form id="search-form">
-      <label>預算（元）<input id="budget" type="number" min="100" step="50"></label>
-      <label>酒精濃度（目前未使用）<input type="number" min="0" max="100"></label>
-      <button type="submit">搜尋推薦</button>
-    </form>
-    <div id="recommendation-list">搜尋結果會出現在這裡</div>
-  </section>
+  let currentUser = null;
 
-  <section id="page3" class="section">
-    <h2>調酒排行榜</h2>
-    <ul id="ranking-list">
-      <li><strong>莫西多</strong> <button onclick="vote(this)">+1</button> <span>票數：12</span></li>
-      <li><strong>琴通寧</strong> <button onclick="vote(this)">+1</button> <span>票數：9</span></li>
-      <li><strong>長島冰茶</strong> <button onclick="vote(this)">+1</button> <span>票數：15</span></li>
-    </ul>
-  </section>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
-      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
-      projectId: "cocktail-selector-a1b46",
-      storageBucket: "cocktail-selector-a1b46.appspot.com",
-      messagingSenderId: "213382733661",
-      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
-      measurementId: "G-LC2T6DR3HB"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    const cocktailData = [];
-
-    document.getElementById('login-btn').addEventListener('click', async () => {
+  const authSection = document.getElementById('auth-section');
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (user) {
+      authSection.innerHTML = `
+        <img src="${user.photoURL}" class="rounded-circle" width="30"> ${user.displayName}
+        <button class="btn btn-outline-secondary btn-sm ms-2" onclick="auth.signOut()">登出</button>
+      `;
+      loadCustomDrinks();
+    } else {
       const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
-        document.getElementById('user-avatar').src = user.photoURL;
-        document.getElementById('user-avatar').style.display = 'inline';
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'inline';
-      } catch (error) {
-        console.error("登入失敗", error);
+      auth.signInWithPopup(provider);
+    }
+  });
+
+  document.getElementById('save-drink').onclick = async () => {
+    const name = document.getElementById('drink-name').value;
+    const alcohol = parseFloat(document.getElementById('alcohol').value);
+    const budget = parseFloat(document.getElementById('budget').value);
+    const recipe = document.getElementById('recipe').value;
+    const tags = document.getElementById('tags').value.split(',').map(t => t.trim());
+    const isPublic = document.getElementById('public').checked;
+
+    if (!currentUser) return alert("請先登入");
+    const drinkRef = await db.collection('drinks').add({
+      name, alcohol, budget, recipe, tags, public: isPublic,
+      uid: currentUser.uid,
+      votes: 0,
+      voters: [],
+      timestamp: Date.now()
+    });
+    alert("儲存成功！");
+    if (isPublic) loadRanking();
+  };
+
+  async function loadRanking() {
+    const snapshot = await db.collection('drinks').where('public', '==', true).orderBy('votes', 'desc').get();
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      const voteBtn = currentUser && !d.voters?.includes(currentUser.uid)
+        ? `<button class="btn btn-outline-primary btn-sm" onclick="vote('${doc.id}')">投票</button>`
+        : '<span class="text-muted">已投票</span>';
+      list.innerHTML += `
+        <div class="border p-2 mb-2">
+          <strong>${d.name}</strong>（${d.votes} 票）<br>
+          ${d.tags.map(t => `<span class='tag'>${t}</span>`).join(' ')}<br>
+          ${voteBtn}
+        </div>
+      `;
+    });
+  }
+
+  async function vote(id) {
+    const ref = db.collection('drinks').doc(id);
+    const snap = await ref.get();
+    const d = snap.data();
+    if (!currentUser || d.voters?.includes(currentUser.uid)) return;
+    await ref.update({
+      votes: (d.votes || 0) + 1,
+      voters: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+    });
+    loadRanking();
+  }
+
+  document.getElementById('search-button').onclick = async () => {
+    const maxBudget = parseFloat(document.getElementById('search-budget').value);
+    const maxAlcohol = parseFloat(document.getElementById('search-alcohol').value);
+    const snapshot = await db.collection('drinks')
+      .where('public', '==', true)
+      .get();
+    const list = document.getElementById('search-results');
+    list.innerHTML = '';
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.budget <= maxBudget && d.alcohol <= maxAlcohol) {
+        list.innerHTML += `
+          <div class="border p-2 mb-2">
+            <strong>${d.name}</strong><br>
+            ${d.tags.map(t => `<span class='tag'>${t}</span>`).join(' ')}<br>
+            <small>${d.recipe}</small>
+          </div>
+        `;
       }
     });
+  };
 
-    document.getElementById('logout-btn').addEventListener('click', async () => {
-      await auth.signOut();
-      document.getElementById('user-avatar').style.display = 'none';
-      document.getElementById('login-btn').style.display = 'inline';
-      document.getElementById('logout-btn').style.display = 'none';
+  async function loadCustomDrinks() {
+    if (!currentUser) return;
+    const snapshot = await db.collection('drinks')
+      .where('uid', '==', currentUser.uid).get();
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.public) loadRanking();
     });
-
-    function switchPage(id) {
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-    }
-
-    document.getElementById('custom-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      const ingredients = document.getElementById('ingredients').value.trim();
-      const ratio = document.getElementById('ratio').value;
-      const description = document.getElementById('description').value;
-      const price = document.getElementById('price').value;
-      const isPublic = document.getElementById('isPublic').checked;
-
-      const cocktail = { name, ingredients, ratio, description, price, votes: 0, isPublic };
-      cocktailData.push(cocktail);
-      addToCustomList(cocktail);
-      if (isPublic) addToRanking(cocktail);
-      e.target.reset();
-      document.getElementById('priceValue').innerText = "300 元";
-    });
-
-    function addToCustomList(cocktail) {
-      const li = document.createElement('li');
-      li.innerHTML = `<span class="cocktail-item">${cocktail.name}</span>`;
-      li.querySelector('span').onclick = () => {
-        alert(`名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n描述：${cocktail.description}\n價錢：${cocktail.price} 元`);
-      };
-      document.getElementById('custom-list').appendChild(li);
-    }
-
-    function addToRanking(cocktail) {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${cocktail.name}</strong> <button onclick="vote(this)">+1</button> <span>票數：0</span>`;
-      document.getElementById('ranking-list').appendChild(li);
-    }
-
-    function vote(button) {
-      const span = button.nextElementSibling;
-      let count = parseInt(span.textContent.replace(/[^\d]/g, ''));
-      span.textContent = `票數：${count + 1}`;
-    }
-
-    document.getElementById('search-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const budget = parseInt(document.getElementById('budget').value);
-      const result = cocktailData.filter(c => c.isPublic && c.price <= budget);
-      const container = document.getElementById('recommendation-list');
-      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => `<div>${c.name} - ${c.price} 元</div>`).join('');
-    });
-
-    const bg = document.getElementById('beer-bg');
-    for (let i = 0; i < 30; i++) {
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.style.left = Math.random() * 100 + '%';
-      bubble.style.animationDuration = (2 + Math.random() * 3) + 's';
-      const size = 5 + Math.random() * 10;
-      bubble.style.width = bubble.style.height = size + 'px';
-      bg.appendChild(bubble);
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
