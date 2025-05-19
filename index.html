@@ -114,7 +114,6 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <header>
@@ -163,7 +162,11 @@
 
   <section id="page3" class="section">
     <h2>調酒排行榜</h2>
-    <ul id="ranking-list"></ul>
+    <ul id="ranking-list">
+      <li><strong>莫西多</strong> <button onclick="vote(this)">+1</button> <span>票數：12</span></li>
+      <li><strong>琴通寧</strong> <button onclick="vote(this)">+1</button> <span>票數：9</span></li>
+      <li><strong>長島冰茶</strong> <button onclick="vote(this)">+1</button> <span>票數：15</span></li>
+    </ul>
   </section>
 
   <script>
@@ -178,36 +181,28 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
 
-    let currentUser = null;
+    const cocktailData = [];
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const user = result.user;
         document.getElementById('user-avatar').src = user.photoURL;
         document.getElementById('user-avatar').style.display = 'inline';
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'inline';
-        loadCustomCocktails();
-        loadRanking();
-      } else {
-        currentUser = null;
-        document.getElementById('user-avatar').style.display = 'none';
-        document.getElementById('login-btn').style.display = 'inline';
-        document.getElementById('logout-btn').style.display = 'none';
-        document.getElementById('custom-list').innerHTML = '';
-        document.getElementById('ranking-list').innerHTML = '';
+      } catch (error) {
+        console.error("登入失敗", error);
       }
-    });
-
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      await auth.signInWithPopup(provider);
     });
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await auth.signOut();
+      document.getElementById('user-avatar').style.display = 'none';
+      document.getElementById('login-btn').style.display = 'inline';
+      document.getElementById('logout-btn').style.display = 'none';
     });
 
     function switchPage(id) {
@@ -215,76 +210,50 @@
       document.getElementById(id).classList.add('active');
     }
 
-    document.getElementById('custom-form').addEventListener('submit', async e => {
+    document.getElementById('custom-form').addEventListener('submit', e => {
       e.preventDefault();
-      const cocktail = {
-        uid: currentUser.uid,
-        name: name.value.trim(),
-        ingredients: ingredients.value.trim(),
-        ratio: ratio.value,
-        description: description.value,
-        price: Number(price.value),
-        isPublic: isPublic.checked,
-        votes: 0
-      };
-      await db.collection('cocktails').add(cocktail);
+      const name = document.getElementById('name').value.trim();
+      const ingredients = document.getElementById('ingredients').value.trim();
+      const ratio = document.getElementById('ratio').value;
+      const description = document.getElementById('description').value;
+      const price = document.getElementById('price').value;
+      const isPublic = document.getElementById('isPublic').checked;
+
+      const cocktail = { name, ingredients, ratio, description, price, votes: 0, isPublic };
+      cocktailData.push(cocktail);
+      addToCustomList(cocktail);
+      if (isPublic) addToRanking(cocktail);
       e.target.reset();
-      priceValue.innerText = '300 元';
-      loadCustomCocktails();
-      if (cocktail.isPublic) loadRanking();
+      document.getElementById('priceValue').innerText = "300 元";
     });
 
-    async function loadCustomCocktails() {
-      const snapshot = await db.collection('cocktails').where('uid', '==', currentUser.uid).get();
-      const list = document.getElementById('custom-list');
-      list.innerHTML = '';
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        const li = document.createElement('li');
-        li.innerHTML = `<span class="cocktail-item">${c.name}</span>`;
-        li.querySelector('span').onclick = () => {
-          alert(`名稱：${c.name}\n內容物：${c.ingredients}\n比例：${c.ratio}\n描述：${c.description}\n價錢：${c.price} 元`);
-        };
-        list.appendChild(li);
-      });
+    function addToCustomList(cocktail) {
+      const li = document.createElement('li');
+      li.innerHTML = <span class="cocktail-item">${cocktail.name}</span>;
+      li.querySelector('span').onclick = () => {
+        alert(名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n描述：${cocktail.description}\n價錢：${cocktail.price} 元);
+      };
+      document.getElementById('custom-list').appendChild(li);
     }
 
-    async function loadRanking() {
-      const snapshot = await db.collection('cocktails').where('isPublic', '==', true).orderBy('votes', 'desc').get();
-      const list = document.getElementById('ranking-list');
-      list.innerHTML = '';
-      snapshot.forEach(doc => {
-        const cocktail = doc.data();
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${cocktail.name}</strong> <button onclick="vote('${doc.id}', this)">+1</button> <span>票數：${cocktail.votes}</span>`;
-        list.appendChild(li);
-      });
+    function addToRanking(cocktail) {
+      const li = document.createElement('li');
+      li.innerHTML = <strong>${cocktail.name}</strong> <button onclick="vote(this)">+1</button> <span>票數：0</span>;
+      document.getElementById('ranking-list').appendChild(li);
     }
 
-    const voted = new Set();
-    async function vote(docId, button) {
-      if (!currentUser) return alert('請先登入');
-      const voteKey = `${currentUser.uid}_${docId}`;
-      const voteDoc = await db.collection('votes').doc(voteKey).get();
-      if (voteDoc.exists) return alert('你已經投過這杯酒了');
-
-      await db.collection('votes').doc(voteKey).set({ timestamp: Date.now() });
-      const ref = db.collection('cocktails').doc(docId);
-      await ref.update({ votes: firebase.firestore.FieldValue.increment(1) });
-      loadRanking();
+    function vote(button) {
+      const span = button.nextElementSibling;
+      let count = parseInt(span.textContent.replace(/[^\d]/g, ''));
+      span.textContent = 票數：${count + 1};
     }
 
-    document.getElementById('search-form').addEventListener('submit', async e => {
+    document.getElementById('search-form').addEventListener('submit', e => {
       e.preventDefault();
       const budget = parseInt(document.getElementById('budget').value);
-      const snapshot = await db.collection('cocktails').where('isPublic', '==', true).get();
-      const result = [];
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        if (c.price <= budget) result.push(c);
-      });
+      const result = cocktailData.filter(c => c.isPublic && c.price <= budget);
       const container = document.getElementById('recommendation-list');
-      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => `<div>${c.name} - ${c.price} 元</div>`).join('');
+      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => <div>${c.name} - ${c.price} 元</div>).join('');
     });
 
     const bg = document.getElementById('beer-bg');
