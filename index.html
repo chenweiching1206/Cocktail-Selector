@@ -1,311 +1,207 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>調酒網站</title>
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-<style>
-  /* 保留你的美編 */
-  #logout-btn, #user-avatar {
-    display: none;
-  }
-  #ranking-list li {
-    margin-bottom: 15px;
-  }
-  #ranking-list li button {
-    margin-top: 5px;
-  }
-  #detail-modal {
-    display:none;
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.6);
-    justify-content: center; align-items: center;
-  }
-  #detail-content {
-    background: white; padding: 20px; border-radius: 5px;
-    max-width: 400px; max-height: 80vh; overflow-y: auto;
-  }
-  #search-section {
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-</style>
+  <!-- 新增 Google 字體 -->
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Baloo 2', cursive, 'Comic Sans MS', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #fceabb, #f8b500);
+      color: #4b3e2e;
+      font-weight: 600;
+      line-height: 1.4;
+      padding-bottom: 2rem;
+    }
+    header {
+      background: linear-gradient(90deg, #ffdc6d, #ffb300);
+      padding: 1.2rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(255, 183, 0, 0.5);
+      border-radius: 0 0 15px 15px;
+    }
+    #logo {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 2px 2px 4px #b36900;
+      letter-spacing: 0.1em;
+    }
+    #user-info {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+    }
+    #login-btn, #logout-btn {
+      padding: 0.8rem 1.6rem;
+      background-color: #ff9f00;
+      color: #fff;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 3px 6px rgba(255, 159, 0, 0.6);
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    #login-btn:hover, #logout-btn:hover {
+      background-color: #e68a00;
+      box-shadow: 0 5px 10px rgba(230, 138, 0, 0.8);
+    }
+    #user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #ffb300;
+      display: none;
+      box-shadow: 0 0 8px #ffd966;
+    }
+    .beer-bg {
+      position: relative;
+      height: 320px;
+      background: linear-gradient(to top, #ffe066, #fff7cc);
+      overflow: hidden;
+      border-radius: 0 0 40px 40px;
+      box-shadow: inset 0 0 30px #ffde59;
+      margin-bottom: 1.5rem;
+    }
+    .bubble {
+      position: absolute;
+      bottom: 0;
+      background-color: #fffbea;
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: rise 4s infinite ease-in;
+      filter: drop-shadow(0 0 2px #fff8c9);
+    }
+    @keyframes rise {
+      0% { transform: translateY(0); opacity: 0.8; }
+      100% { transform: translateY(-320px); opacity: 0; }
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background: #fff1a8;
+      box-shadow: inset 0 -3px 10px #ffcc33;
+      border-radius: 30px;
+      max-width: 600px;
+      margin: 0 auto 2rem;
+      overflow: hidden;
+    }
+    nav button {
+      flex: 1;
+      padding: 1rem 0;
+      border: none;
+      background: none;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #a66600;
+      transition: background-color 0.35s, color 0.35s;
+      user-select: none;
+      font-family: 'Baloo 2', cursive;
+    }
+    nav button:hover, nav button.active {
+      background-color: #ffd54c;
+      color: #4b3e2e;
+      box-shadow: inset 0 -3px 10px #e6b800;
+    }
+    .section {
+      display: none;
+      padding: 1.5rem 1.8rem;
+      max-width: 800px;
+      margin: 0 auto 3rem;
+      background: #fff8dc;
+      border-radius: 25px;
+      box-shadow: 0 6px 15px rgba(255, 200, 0, 0.3);
+      font-size: 1.1rem;
+      color: #5c4b27;
+    }
+    .active { display: block; }
+    h2 {
+      margin-bottom: 1rem;
+      font-size: 2rem;
+      color: #ff9800;
+      text-shadow: 1px 1px 2px #b36e00;
+      user-select: none;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      font-weight: 700;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-weight: 700;
+      color: #7c5e00;
+    }
+    input, select, textarea, button[type="submit"] {
+      padding: 0.6rem 1rem;
+      font-size: 1.05rem;
+      border-radius: 15px;
+      border: 2px solid #ffcc33;
+      transition: border-color 0.3s ease;
+      font-family: 'Baloo 2', cursive;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #ffb300;
+      box-shadow: 0 0 6px #ffb300aa;
+    }
+    button[type="submit"] {
+      background-color: #ffb300;
+      border: none;
+      cursor: pointer;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 5px 10px #ffb300cc;
+      transition: background-color 0.3s ease;
+    }
+    button[type="submit"]:hover {
+      background-color: #e68a00;
+      box-shadow: 0 6px 12px #e68a00cc;
+    }
+    ul {
+      margin-top: 1.5rem;
+      padding-left: 0;
+    }
+    ul li {
+      list-style: none;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #805c00;
+      font-weight: 700;
+      cursor: pointer;
+      border-bottom: 1.5px dotted #ffcc33;
+      padding-bottom: 0.4rem;
+      user-select: none;
+    }
+    ul li:hover {
+      color: #ff9800;
+    }
+    ul li span {
+      margin-left: 1rem;
+    }
+    .price-output {
+      font-weight: 900;
+      color: #b37400;
+      font-family: 'Baloo 2', cursive;
+    }
+    .cocktail-item {
+      cursor: pointer;
+      color: #cc7700;
+      text-decoration: underline;
+      font-family: 'Baloo 2', cursive;
+    }
+    .cocktail-item:hover {
+      color: #ff8c00;
+      text-shadow: 0 0 6px #ffcc33;
+    }
+  </style>
 </head>
-<body>
-
-<h1>調酒網站</h1>
-
-<button id="login-btn">Google 登入</button>
-<button id="logout-btn">登出</button>
-<img id="user-avatar" width="30" height="30" />
-
-<div>
-  <input type="text" id="cocktail-name" placeholder="酒名" />
-  <textarea id="cocktail-recipe" placeholder="酒譜內容"></textarea>
-  <input type="number" id="cocktail-abv" placeholder="酒精濃度 %" />
-  <label><input type="checkbox" id="public-checkbox" />公開酒譜</label>
-  <button id="save-btn">儲存酒譜</button>
-</div>
-
-<div id="search-section">
-  <h2>搜尋推薦</h2>
-  <input type="number" id="search-max-budget" placeholder="最高預算 (元)" />
-  <input type="number" id="search-max-abv" placeholder="最高酒精濃度 (%)" />
-  <button id="search-btn">搜尋推薦</button>
-  <ul id="search-results"></ul>
-</div>
-
-<h2>排行榜</h2>
-<ul id="ranking-list"></ul>
-
-<!-- 酒譜詳情 Modal -->
-<div id="detail-modal">
-  <div id="detail-content">
-    <h3 id="detail-name"></h3>
-    <p><strong>酒精濃度：</strong><span id="detail-abv"></span>%</p>
-    <p id="detail-recipe"></p>
-    <button id="close-detail">關閉</button>
-  </div>
-</div>
-
-<script>
-  // Firebase 初始化
-  const firebaseConfig = {
-    apiKey: "你的API金鑰",
-    authDomain: "你的authDomain",
-    projectId: "你的projectId",
-    storageBucket: "你的storageBucket",
-    messagingSenderId: "你的messagingSenderId",
-    appId: "你的appId"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  let currentUser = null;
-
-  // DOM 元素
-  const loginBtn = document.getElementById('login-btn');
-  const logoutBtn = document.getElementById('logout-btn');
-  const userAvatar = document.getElementById('user-avatar');
-  const saveBtn = document.getElementById('save-btn');
-
-  const cocktailNameInput = document.getElementById('cocktail-name');
-  const cocktailRecipeInput = document.getElementById('cocktail-recipe');
-  const cocktailAbvInput = document.getElementById('cocktail-abv');
-  const publicCheckbox = document.getElementById('public-checkbox');
-
-  const rankingList = document.getElementById('ranking-list');
-
-  const searchMaxBudget = document.getElementById('search-max-budget');
-  const searchMaxAbv = document.getElementById('search-max-abv');
-  const searchBtn = document.getElementById('search-btn');
-  const searchResults = document.getElementById('search-results');
-
-  const detailModal = document.getElementById('detail-modal');
-  const detailName = document.getElementById('detail-name');
-  const detailAbv = document.getElementById('detail-abv');
-  const detailRecipe = document.getElementById('detail-recipe');
-  const closeDetailBtn = document.getElementById('close-detail');
-
-  // 登入登出事件
-  loginBtn.addEventListener('click', () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider);
-  });
-  logoutBtn.addEventListener('click', () => auth.signOut());
-
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      currentUser = user;
-      userAvatar.src = user.photoURL;
-      userAvatar.style.display = 'inline';
-      loginBtn.style.display = 'none';
-      logoutBtn.style.display = 'inline';
-    } else {
-      currentUser = null;
-      userAvatar.style.display = 'none';
-      loginBtn.style.display = 'inline';
-      logoutBtn.style.display = 'none';
-    }
-  });
-
-  // 儲存酒譜功能
-  saveBtn.addEventListener('click', async () => {
-    if (!currentUser) {
-      alert("請先登入才能儲存");
-      return;
-    }
-    const name = cocktailNameInput.value.trim();
-    const recipe = cocktailRecipeInput.value.trim();
-    const abv = parseFloat(cocktailAbvInput.value);
-    const isPublic = publicCheckbox.checked;
-
-    if (!name || !recipe || isNaN(abv)) {
-      alert("請填寫完整資料！");
-      return;
-    }
-
-    const cocktail = {
-      name,
-      recipe,
-      abv,
-      userId: currentUser.uid,
-      userName: currentUser.displayName,
-      userAvatar: currentUser.photoURL,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    };
-
-    try {
-      const docRef = await db.collection("userCocktails").add(cocktail);
-
-      if (isPublic) {
-        await db.collection("publicCocktails").doc(docRef.id).set({
-          ...cocktail,
-          votes: 0,
-          voters: []
-        });
-      }
-      alert("儲存成功！");
-      // 清空輸入欄位
-      cocktailNameInput.value = '';
-      cocktailRecipeInput.value = '';
-      cocktailAbvInput.value = '';
-      publicCheckbox.checked = false;
-    } catch (error) {
-      console.error(error);
-      alert("儲存失敗！");
-    }
-  });
-
-  // 排行榜新增項目（帶投票功能及點酒名查看詳情）
-  function addRankingItem(data, docId) {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong class="cocktail-name" style="cursor:pointer; color:blue;">${data.name}</strong> by ${data.userName}<br />
-      酒精濃度：${data.abv}%<br />
-      票數：${data.votes || 0}<br />
-      <button class="vote-btn">投票</button>
-    `;
-
-    // 點酒名查看詳情
-    li.querySelector('.cocktail-name').addEventListener('click', () => {
-      detailName.textContent = data.name;
-      detailAbv.textContent = data.abv;
-      detailRecipe.textContent = data.recipe;
-      detailModal.style.display = 'flex';
-    });
-
-    // 投票按鈕
-    li.querySelector('.vote-btn').addEventListener('click', async () => {
-      if (!currentUser) {
-        alert("請先登入才能投票！");
-        return;
-      }
-
-      const docRef = db.collection("publicCocktails").doc(docId);
-      const docSnap = await docRef.get();
-      const docData = docSnap.data();
-
-      if (docData.voters && docData.voters.includes(currentUser.uid)) {
-        alert("你已投過票！");
-        return;
-      }
-
-      await docRef.update({
-        votes: (docData.votes || 0) + 1,
-        voters: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-      });
-
-      alert("投票成功！");
-    });
-
-    rankingList.appendChild(li);
-  }
-
-  // 排行榜即時監聽與更新
-  db.collection("publicCocktails")
-    .orderBy("votes", "desc")
-    .onSnapshot(snapshot => {
-      rankingList.innerHTML = '';
-      snapshot.forEach(doc => {
-        addRankingItem(doc.data(), doc.id);
-      });
-    }, error => {
-      console.error("排行榜監聽錯誤", error);
-    });
-
-  // 搜尋推薦功能
-  searchBtn.addEventListener('click', async () => {
-    const maxBudget = parseFloat(searchMaxBudget.value);
-    const maxAbv = parseFloat(searchMaxAbv.value);
-
-    // 清空結果
-    searchResults.innerHTML = '';
-
-    try {
-      // 從排行榜中取得所有公開酒譜（Firestore 目前不支持複雜複合條件直接查詢，需手動篩選）
-      const snapshot = await db.collection("publicCocktails")
-        .orderBy("votes", "desc")
-        .get();
-
-      let results = [];
-
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        // 預算欄位假設在資料中，有需要自己加，這裡沒欄位所以先跳過
-        // 篩選條件：酒精濃度 ≤ maxAbv 且 預算 ≤ maxBudget
-        // 因你沒預算欄位，這邊只用酒精濃度過濾
-        if ((!isNaN(maxAbv) && data.abv > maxAbv)) return;
-        // 如果有預算欄位，這裡補充條件： if ((!isNaN(maxBudget) && data.budget > maxBudget)) return;
-        results.push({ id: doc.id, data });
-      });
-
-      if (results.length === 0) {
-        searchResults.innerHTML = '<li>找不到符合條件的酒譜</li>';
-        return;
-      }
-
-      // 顯示結果
-      results.forEach(({ id, data }) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong class="cocktail-name" style="cursor:pointer; color:blue;">${data.name}</strong> by ${data.userName}<br/>
-          酒精濃度：${data.abv}%<br/>
-          <em>${data.recipe}</em>
-        `;
-
-        // 點擊查看詳情 (同排行榜詳情)
-        li.querySelector('.cocktail-name').addEventListener('click', () => {
-          detailName.textContent = data.name;
-          detailAbv.textContent = data.abv;
-          detailRecipe.textContent = data.recipe;
-          detailModal.style.display = 'flex';
-        });
-
-        searchResults.appendChild(li);
-      });
-    } catch (error) {
-      console.error("搜尋錯誤", error);
-      searchResults.innerHTML = '<li>搜尋失敗，請稍後再試</li>';
-    }
-  });
-
-  // 詳情視窗關閉
-  closeDetailBtn.addEventListener('click', () => {
-    detailModal.style.display = 'none';
-  });
-
-  // 點外面也能關閉詳情視窗
-  detailModal.addEventListener('click', e => {
-    if (e.target === detailModal) detailModal.style.display = 'none';
-  });
-</script>
-
-</body>
-</html>
