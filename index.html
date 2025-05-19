@@ -1,173 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
 <head>
-  <!-- 新增 Google 字體 -->
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>調酒天地</title>
   <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-      font-family: 'Baloo 2', cursive, 'Comic Sans MS', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    body {
-      background: linear-gradient(135deg, #fceabb, #f8b500);
-      color: #4b3e2e;
-      font-weight: 600;
-      line-height: 1.4;
-      padding-bottom: 2rem;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f1ec; color: #333; }
     header {
-      background: linear-gradient(90deg, #ffdc6d, #ffb300);
-      padding: 1.2rem 2rem;
+      background-color: #ffcc00;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 4px 10px rgba(255, 183, 0, 0.5);
-      border-radius: 0 0 15px 15px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    #logo {
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 2px 2px 4px #b36900;
-      letter-spacing: 0.1em;
-    }
-    #user-info {
-      display: flex;
-      align-items: center;
-      gap: 1.2rem;
-    }
+    #logo { font-size: 1.8rem; font-weight: bold; }
+    #user-info { display: flex; align-items: center; gap: 1rem; }
     #login-btn, #logout-btn {
-      padding: 0.8rem 1.6rem;
-      background-color: #ff9f00;
-      color: #fff;
-      border: none;
-      border-radius: 25px;
-      cursor: pointer;
-      font-weight: 700;
-      box-shadow: 0 3px 6px rgba(255, 159, 0, 0.6);
-      transition: background-color 0.3s ease;
-      user-select: none;
+      padding: 0.6rem 1.2rem;
+      background-color: #333; color: white;
+      border: none; border-radius: 5px; cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s;
     }
     #login-btn:hover, #logout-btn:hover {
-      background-color: #e68a00;
-      box-shadow: 0 5px 10px rgba(230, 138, 0, 0.8);
+      background-color: #555;
     }
     #user-avatar {
-      width: 48px;
-      height: 48px;
+      width: 40px; height: 40px;
       border-radius: 50%;
-      border: 2px solid #ffb300;
       display: none;
-      box-shadow: 0 0 8px #ffd966;
     }
     .beer-bg {
       position: relative;
-      height: 320px;
-      background: linear-gradient(to top, #ffe066, #fff7cc);
+      height: 300px;
+      background: linear-gradient(to top, #f7d774, #fff3b0);
       overflow: hidden;
-      border-radius: 0 0 40px 40px;
-      box-shadow: inset 0 0 30px #ffde59;
-      margin-bottom: 1.5rem;
     }
     .bubble {
       position: absolute;
       bottom: 0;
-      background-color: #fffbea;
+      background-color: white;
       border-radius: 50%;
-      opacity: 0.8;
-      animation: rise 4s infinite ease-in;
-      filter: drop-shadow(0 0 2px #fff8c9);
+      opacity: 0.7;
+      animation: rise 5s infinite ease-in;
     }
     @keyframes rise {
-      0% { transform: translateY(0); opacity: 0.8; }
-      100% { transform: translateY(-320px); opacity: 0; }
+      0% { transform: translateY(0); opacity: 0.7; }
+      100% { transform: translateY(-300px); opacity: 0; }
     }
     nav {
       display: flex;
       justify-content: center;
-      background: #fff1a8;
-      box-shadow: inset 0 -3px 10px #ffcc33;
-      border-radius: 30px;
-      max-width: 600px;
-      margin: 0 auto 2rem;
-      overflow: hidden;
+      background-color: #fff9d6;
+      box-shadow: inset 0 -1px 0 #e0dcbf;
     }
     nav button {
       flex: 1;
-      padding: 1rem 0;
+      padding: 1rem;
       border: none;
       background: none;
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-size: 1rem;
       cursor: pointer;
-      color: #a66600;
-      transition: background-color 0.35s, color 0.35s;
-      user-select: none;
-      font-family: 'Baloo 2', cursive;
+      transition: background-color 0.3s;
+      font-weight: bold;
+      color: #333;
     }
-    nav button:hover, nav button.active {
-      background-color: #ffd54c;
-      color: #4b3e2e;
-      box-shadow: inset 0 -3px 10px #e6b800;
+    nav button:hover {
+      background-color: #ffe577;
+    }
+    nav button.active {
+      background-color: #ffd633;
+      font-weight: bolder;
+      color: #000;
     }
     .section {
       display: none;
-      padding: 1.5rem 1.8rem;
+      padding: 2rem;
       max-width: 800px;
-      margin: 0 auto 3rem;
-      background: #fff8dc;
-      border-radius: 25px;
-      box-shadow: 0 6px 15px rgba(255, 200, 0, 0.3);
-      font-size: 1.1rem;
-      color: #5c4b27;
+      margin: auto;
     }
     .active { display: block; }
-    h2 {
-      margin-bottom: 1rem;
-      font-size: 2rem;
-      color: #ff9800;
-      text-shadow: 1px 1px 2px #b36e00;
-      user-select: none;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 1.2rem;
-      font-weight: 700;
-    }
-    label {
-      display: flex;
-      flex-direction: column;
-      font-weight: 700;
-      color: #7c5e00;
-    }
+    form { display: flex; flex-direction: column; gap: 1rem; }
+    label { display: flex; flex-direction: column; font-weight: bold; font-family: 'Comic Sans MS', cursive, sans-serif; }
     input, select, textarea, button[type="submit"] {
-      padding: 0.6rem 1rem;
-      font-size: 1.05rem;
-      border-radius: 15px;
-      border: 2px solid #ffcc33;
-      transition: border-color 0.3s ease;
-      font-family: 'Baloo 2', cursive;
+      padding: 0.5rem; font-size: 1rem;
+      border-radius: 10px;
+      border: 2px solid #ffcc00;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
     }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #ffb300;
-      box-shadow: 0 0 6px #ffb300aa;
+    input[type="range"] {
+      accent-color: #ffcc00;
     }
     button[type="submit"] {
-      background-color: #ffb300;
+      background-color: #ffcc00;
       border: none;
       cursor: pointer;
-      font-weight: 900;
-      color: #fff;
-      box-shadow: 0 5px 10px #ffb300cc;
-      transition: background-color 0.3s ease;
+      font-weight: bold;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background-color 0.3s;
+      border-radius: 12px;
     }
     button[type="submit"]:hover {
-      background-color: #e68a00;
-      box-shadow: 0 6px 12px #e68a00cc;
-    }
-    ul {
-      margin-top: 1.5rem;
-      padding-left: 0;
+      background-color: #ffdb4d;
     }
     ul li {
       list-style: none;
@@ -175,33 +111,254 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: #805c00;
-      font-weight: 700;
-      cursor: pointer;
-      border-bottom: 1.5px dotted #ffcc33;
-      padding-bottom: 0.4rem;
-      user-select: none;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      font-size: 1.1rem;
+      color: #444;
+      cursor: default;
     }
-    ul li:hover {
-      color: #ff9800;
-    }
-    ul li span {
-      margin-left: 1rem;
-    }
+    ul li span { margin-left: 1rem; }
     .price-output {
-      font-weight: 900;
-      color: #b37400;
-      font-family: 'Baloo 2', cursive;
+      font-weight: bold;
+      color: #ff9900;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
     }
     .cocktail-item {
       cursor: pointer;
-      color: #cc7700;
+      color: #0077cc;
       text-decoration: underline;
-      font-family: 'Baloo 2', cursive;
+      transition: color 0.3s;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
     }
     .cocktail-item:hover {
-      color: #ff8c00;
-      text-shadow: 0 0 6px #ffcc33;
+      color: #004a99;
+    }
+    #recommendation-list > div {
+      padding: 0.5rem 0;
+      border-bottom: 1px dashed #ccc;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      cursor: default;
+    }
+    #ranking-list li button {
+      background-color: #ffcc00;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 0.3rem 0.7rem;
+      font-weight: bold;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      transition: background-color 0.3s;
+    }
+    #ranking-list li button:hover {
+      background-color: #ffdb4d;
     }
   </style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
+<body>
+  <header>
+    <div id="logo">調酒天地</div>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="頭像" />
+      <button id="login-btn">登入</button>
+      <button id="logout-btn" style="display: none;">登出</button>
+    </div>
+  </header>
+  <div class="beer-bg" id="beer-bg"></div>
+  <nav>
+    <button class="active" onclick="switchPage('page1', this)">自訂調酒</button>
+    <button onclick="switchPage('page2', this)">搜尋推薦</button>
+    <button onclick="switchPage('page3', this)">排行榜</button>
+  </nav>
+
+  <section id="page1" class="section active">
+    <h2>自訂你的調酒</h2>
+    <form id="custom-form">
+      <label>調酒名稱<input id="name" type="text" required></label>
+      <label>內容物<input id="ingredients" type="text" required></label>
+      <label>比例<input id="ratio" type="text"></label>
+      <label>口感描述<textarea id="description" rows="3"></textarea></label>
+      <label>價錢估計
+        <input id="price" type="range" min="100" max="1000" step="50" value="300" oninput="priceValue.innerText = this.value + ' 元'">
+        <span id="priceValue" class="price-output">300 元</span>
+      </label>
+      <label>是否公開<input id="isPublic" type="checkbox"></label>
+      <button type="submit">儲存酒譜</button>
+    </form>
+    <ul id="custom-list"></ul>
+  </section>
+
+  <section id="page2" class="section">
+    <h2>搜尋推薦調酒</h2>
+    <form id="search-form">
+      <label>預算（元）<input id="budget" type="number" min="100" step="50"></label>
+      <label>酒精濃度（目前未使用）<input type="number" min="0" max="100"></label>
+      <button type="submit">搜尋推薦</button>
+    </form>
+    <div id="recommendation-list">搜尋結果會出現在這裡</div>
+  </section>
+
+  <section id="page3" class="section">
+    <h2>調酒排行榜</h2>
+    <ul id="ranking-list"></ul>
+  </section>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.appspot.com",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
+
+    const cocktailData = [];
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
+        document.getElementById('user-avatar').src = user.photoURL || 'https://via.placeholder.com/40';
+        document.getElementById('user-avatar').style.display = 'inline';
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline';
+        loadRanking();
+      } else {
+        currentUser = null;
+        document.getElementById('user-avatar').style.display = 'none';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+      }
+    });
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
+      } catch (error) {
+        console.error("登入失敗", error);
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await auth.signOut();
+    });
+
+    function switchPage(id, btn) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    document.getElementById('custom-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const ingredients = document.getElementById('ingredients').value.trim();
+      const ratio = document.getElementById('ratio').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const price = parseInt(document.getElementById('price').value);
+      const isPublic = document.getElementById('isPublic').checked;
+      const cocktail = { name, ingredients, ratio, description, price, votes: 0, isPublic };
+      cocktailData.push(cocktail);
+      addToCustomList(cocktail);
+
+      if (currentUser) {
+        try {
+          const userCocktailRef = await db.collection('users').doc(currentUser.uid).collection('cocktails').add(cocktail);
+          if (isPublic) {
+            await db.collection('publicCocktails').doc(userCocktailRef.id).set(cocktail);
+          }
+        } catch (err) {
+          console.error('儲存失敗', err);
+        }
+      }
+
+      e.target.reset();
+      document.getElementById('priceValue').innerText = '300 元';
+    });
+
+    function addToCustomList(cocktail) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span class="cocktail-item">${cocktail.name}</span>`;
+      li.querySelector('span').onclick = () => {
+        alert(`名稱：${cocktail.name}
+內容物：${cocktail.ingredients}
+比例：${cocktail.ratio}
+描述：${cocktail.description}
+價錢：${cocktail.price} 元`);
+      };
+      document.getElementById('custom-list').appendChild(li);
+    }
+
+    function addToRanking(cocktail, id) {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${cocktail.name}</strong> <button>+1</button> <span>票數：${cocktail.votes}</span>`;
+      const button = li.querySelector('button');
+      button.onclick = async () => {
+        if (!currentUser) {
+          alert('請先登入才能投票！');
+          return;
+        }
+        try {
+          const userVoteDoc = await db.collection('votes').doc(currentUser.uid + '_' + id).get();
+          if (userVoteDoc.exists) {
+            alert('你已經投過這個調酒了！');
+            return;
+          }
+          cocktail.votes += 1;
+          li.querySelector('span').textContent = `票數：${cocktail.votes}`;
+          await db.collection('publicCocktails').doc(id).update({ votes: cocktail.votes });
+          await db.collection('votes').doc(currentUser.uid + '_' + id).set({ userId: currentUser.uid, cocktailId: id });
+        } catch (error) {
+          console.error('投票失敗', error);
+        }
+      };
+      document.getElementById('ranking-list').appendChild(li);
+    }
+
+    async function loadRanking() {
+      document.getElementById('ranking-list').innerHTML = '';
+      try {
+        const snapshot = await db.collection('publicCocktails').orderBy('votes', 'desc').get();
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          addToRanking(data, doc.id);
+        });
+      } catch (error) {
+        console.error('載入排行榜失敗', error);
+      }
+    }
+
+    document.getElementById('search-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const budget = parseInt(document.getElementById('budget').value) || 0;
+      // 目前沒使用酒精濃度條件，後面可以加
+      const result = cocktailData.filter(c => c.isPublic && c.price <= budget);
+      const container = document.getElementById('recommendation-list');
+      container.innerHTML = result.length === 0
+        ? '找不到符合預算的調酒。'
+        : result.map(c => `<div>${c.name} - ${c.price} 元</div>`).join('');
+    });
+
+    // 製作啤酒泡泡動畫
+    function createBubble() {
+      const bubble = document.createElement('div');
+      bubble.classList.add('bubble');
+      bubble.style.left = Math.random() * 100 + '%';
+      bubble.style.width = bubble.style.height = Math.random() * 15 + 10 + 'px';
+      bubble.style.animationDuration = 3 + Math.random() * 3 + 's';
+      document.getElementById('beer-bg').appendChild(bubble);
+      setTimeout(() => bubble.remove(), 6000);
+    }
+    setInterval(createBubble, 300);
+  </script>
+</body>
+</html>
