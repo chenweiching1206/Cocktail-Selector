@@ -7,7 +7,6 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f4f1ec; color: #333; }
-
     header {
       background-color: #ffcc00;
       padding: 1rem 2rem;
@@ -16,7 +15,6 @@
       align-items: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-
     #logo { font-size: 1.8rem; font-weight: bold; }
     #user-info { display: flex; align-items: center; gap: 1rem; }
     #login-btn, #logout-btn {
@@ -24,20 +22,17 @@
       background-color: #333; color: white;
       border: none; border-radius: 5px; cursor: pointer;
     }
-
     #user-avatar {
       width: 40px; height: 40px;
       border-radius: 50%;
       display: none;
     }
-
     .beer-bg {
       position: relative;
       height: 300px;
       background: linear-gradient(to top, #f7d774, #fff3b0);
       overflow: hidden;
     }
-
     .bubble {
       position: absolute;
       bottom: 0;
@@ -46,19 +41,16 @@
       opacity: 0.7;
       animation: rise 5s infinite ease-in;
     }
-
     @keyframes rise {
       0% { transform: translateY(0); opacity: 0.7; }
       100% { transform: translateY(-300px); opacity: 0; }
     }
-
     nav {
       display: flex;
       justify-content: center;
       background-color: #fff9d6;
       box-shadow: inset 0 -1px 0 #e0dcbf;
     }
-
     nav button {
       flex: 1;
       padding: 1rem;
@@ -68,35 +60,28 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
     nav button:hover {
       background-color: #ffe577;
     }
-
     .section {
       display: none;
       padding: 2rem;
       max-width: 800px;
       margin: auto;
     }
-
     .active { display: block; }
-
     form { display: flex; flex-direction: column; gap: 1rem; }
     label { display: flex; flex-direction: column; font-weight: bold; }
-
     input, select, textarea, button[type="submit"] {
       padding: 0.5rem; font-size: 1rem;
       border-radius: 5px; border: 1px solid #ccc;
     }
-
     button[type="submit"] {
       background-color: #ffcc00;
       border: none;
       cursor: pointer;
       font-weight: bold;
     }
-
     ul li {
       list-style: none;
       margin-bottom: 1rem;
@@ -104,16 +89,14 @@
       justify-content: space-between;
       align-items: center;
     }
-
     ul li span { margin-left: 1rem; }
-
     .price-output { font-weight: bold; }
     .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; }
   </style>
-
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <header>
@@ -124,9 +107,7 @@
       <button id="logout-btn" style="display: none;">登出</button>
     </div>
   </header>
-
   <div class="beer-bg" id="beer-bg"></div>
-
   <nav>
     <button onclick="switchPage('page1')">自訂調酒</button>
     <button onclick="switchPage('page2')">搜尋推薦</button>
@@ -162,11 +143,7 @@
 
   <section id="page3" class="section">
     <h2>調酒排行榜</h2>
-    <ul id="ranking-list">
-      <li><strong>莫西多</strong> <button onclick="vote(this)">+1</button> <span>票數：12</span></li>
-      <li><strong>琴通寧</strong> <button onclick="vote(this)">+1</button> <span>票數：9</span></li>
-      <li><strong>長島冰茶</strong> <button onclick="vote(this)">+1</button> <span>票數：15</span></li>
-    </ul>
+    <ul id="ranking-list"></ul>
   </section>
 
   <script>
@@ -181,18 +158,31 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+    let currentUser = null;
 
     const cocktailData = [];
 
-    document.getElementById('login-btn').addEventListener('click', async () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      try {
-        const result = await auth.signInWithPopup(provider);
-        const user = result.user;
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        currentUser = user;
         document.getElementById('user-avatar').src = user.photoURL;
         document.getElementById('user-avatar').style.display = 'inline';
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'inline';
+        loadRanking();
+      } else {
+        currentUser = null;
+        document.getElementById('user-avatar').style.display = 'none';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+      }
+    });
+
+    document.getElementById('login-btn').addEventListener('click', async () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await auth.signInWithPopup(provider);
       } catch (error) {
         console.error("登入失敗", error);
       }
@@ -200,9 +190,6 @@
 
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await auth.signOut();
-      document.getElementById('user-avatar').style.display = 'none';
-      document.getElementById('login-btn').style.display = 'inline';
-      document.getElementById('logout-btn').style.display = 'none';
     });
 
     function switchPage(id) {
@@ -210,42 +197,55 @@
       document.getElementById(id).classList.add('active');
     }
 
-    document.getElementById('custom-form').addEventListener('submit', e => {
+    document.getElementById('custom-form').addEventListener('submit', async e => {
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
       const ingredients = document.getElementById('ingredients').value.trim();
       const ratio = document.getElementById('ratio').value;
       const description = document.getElementById('description').value;
-      const price = document.getElementById('price').value;
+      const price = parseInt(document.getElementById('price').value);
       const isPublic = document.getElementById('isPublic').checked;
-
       const cocktail = { name, ingredients, ratio, description, price, votes: 0, isPublic };
       cocktailData.push(cocktail);
       addToCustomList(cocktail);
-      if (isPublic) addToRanking(cocktail);
+
+      if (currentUser) {
+        await db.collection('users').doc(currentUser.uid).collection('cocktails').add(cocktail);
+        if (isPublic) {
+          await db.collection('publicCocktails').add(cocktail);
+        }
+      }
       e.target.reset();
       document.getElementById('priceValue').innerText = "300 元";
     });
 
     function addToCustomList(cocktail) {
       const li = document.createElement('li');
-      li.innerHTML = <span class="cocktail-item">${cocktail.name}</span>;
+      li.innerHTML = `<span class="cocktail-item">${cocktail.name}</span>`;
       li.querySelector('span').onclick = () => {
-        alert(名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n描述：${cocktail.description}\n價錢：${cocktail.price} 元);
+        alert(`名稱：${cocktail.name}\n內容物：${cocktail.ingredients}\n比例：${cocktail.ratio}\n描述：${cocktail.description}\n價錢：${cocktail.price} 元`);
       };
       document.getElementById('custom-list').appendChild(li);
     }
 
-    function addToRanking(cocktail) {
+    function addToRanking(cocktail, id) {
       const li = document.createElement('li');
-      li.innerHTML = <strong>${cocktail.name}</strong> <button onclick="vote(this)">+1</button> <span>票數：0</span>;
+      li.innerHTML = `<strong>${cocktail.name}</strong> <button>+1</button> <span>票數：${cocktail.votes}</span>`;
+      const button = li.querySelector('button');
+      button.onclick = async () => {
+        cocktail.votes += 1;
+        li.querySelector('span').textContent = `票數：${cocktail.votes}`;
+        await db.collection('publicCocktails').doc(id).update({ votes: cocktail.votes });
+      };
       document.getElementById('ranking-list').appendChild(li);
     }
 
-    function vote(button) {
-      const span = button.nextElementSibling;
-      let count = parseInt(span.textContent.replace(/[^\d]/g, ''));
-      span.textContent = 票數：${count + 1};
+    async function loadRanking() {
+      const snapshot = await db.collection('publicCocktails').orderBy('votes', 'desc').get();
+      document.getElementById('ranking-list').innerHTML = '';
+      snapshot.forEach(doc => {
+        addToRanking(doc.data(), doc.id);
+      });
     }
 
     document.getElementById('search-form').addEventListener('submit', e => {
@@ -253,7 +253,9 @@
       const budget = parseInt(document.getElementById('budget').value);
       const result = cocktailData.filter(c => c.isPublic && c.price <= budget);
       const container = document.getElementById('recommendation-list');
-      container.innerHTML = result.length === 0 ? '找不到符合預算的調酒。' : result.map(c => <div>${c.name} - ${c.price} 元</div>).join('');
+      container.innerHTML = result.length === 0
+        ? '找不到符合預算的調酒。'
+        : result.map(c => `<div>${c.name} - ${c.price} 元</div>`).join('');
     });
 
     const bg = document.getElementById('beer-bg');
