@@ -1,147 +1,189 @@
-// 調酒master主腳本（整合Firebase與前端功能）
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>調酒master</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 40px; }
+    .cocktail-item { margin-bottom: 10px; }
+    button { margin-left: 10px; }
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, updateDoc, increment, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// 初始化 Firebase（確保你的 firebaseConfig 正確設定）
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-let currentUser = null;
-let cocktailData = [];
+    const firebaseConfig = {
+      apiKey: "你的API金鑰",
+      authDomain: "你的專案.firebaseapp.com",
+      projectId: "你的project-id",
+      storageBucket: "你的project-id.appspot.com",
+      messagingSenderId: "你的發送者ID",
+      appId: "你的App ID"
+    };
 
-firebase.auth().onAuthStateChanged((user) => {
-  currentUser = user;
-  if (user) {
-    document.getElementById('user-info').textContent = user.displayName || user.email;
-    loadUserCocktails();
-  } else {
-    document.getElementById('user-info').textContent = '未登入';
-  }
-});
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
 
-// 儲存自訂調酒
-async function saveCustomCocktail() {
-  if (!currentUser) return alert('請先登入才能儲存調酒！');
+    const signInBtn = document.getElementById("signIn");
+    const signOutBtn = document.getElementById("signOut");
+    const userInfo = document.getElementById("userInfo");
 
-  const cocktail = {
-    name: document.getElementById('cocktail-name').value.trim(),
-    ingredients: document.getElementById('ingredients').value.trim(),
-    instructions: document.getElementById('instructions').value.trim(),
-    alcohol: parseFloat(document.getElementById('alcohol').value),
-    price: parseInt(document.getElementById('price').value),
-    isPublic: document.getElementById('is-public').checked,
-    votes: 0,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
+    signInBtn.onclick = async () => {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    };
 
-  try {
-    const userRef = db.collection('users').doc(currentUser.uid);
-    const userCocktailRef = await userRef.collection('cocktails').add(cocktail);
+    signOutBtn.onclick = async () => {
+      await signOut(auth);
+    };
 
-    if (cocktail.isPublic) {
-      await db.collection('publicCocktails').doc(userCocktailRef.id).set({
-        ...cocktail,
-        owner: currentUser.uid
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        currentUser = user;
+        userInfo.textContent = `登入中：${user.displayName}`;
+        document.getElementById("customList").innerHTML = "";
+        loadCustomCocktails();
+        subscribeToPublicCocktails();
+      } else {
+        currentUser = null;
+        userInfo.textContent = "尚未登入";
+        document.getElementById("customList").innerHTML = "";
+        document.getElementById("rankingList").innerHTML = "";
+      }
+    });
+
+    async function saveCustomCocktail() {
+      const name = document.getElementById("cName").value;
+      const price = Number(document.getElementById("cPrice").value);
+      const alcohol = Number(document.getElementById("cAlc").value);
+      const publicToggle = document.getElementById("cPublic").checked;
+
+      const newCocktail = { name, price, alcohol, public: publicToggle };
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      let list = [];
+      if (userSnap.exists()) {
+        list = userSnap.data().customCocktails || [];
+      }
+
+      list.push(newCocktail);
+      await setDoc(userRef, { customCocktails: list }, { merge: true });
+
+      if (publicToggle) {
+        await setDoc(doc(db, "publicCocktails", name), {
+          name,
+          price,
+          alcohol,
+          votes: 0
+        });
+      }
+
+      document.getElementById("cName").value = "";
+      document.getElementById("cPrice").value = "";
+      document.getElementById("cAlc").value = "";
+      document.getElementById("cPublic").checked = false;
+      loadCustomCocktails();
+    }
+
+    async function loadCustomCocktails() {
+      if (!currentUser) return;
+      const userRef = doc(db, "users", currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      const list = (userSnap.exists() ? userSnap.data().customCocktails : []) || [];
+
+      const div = document.getElementById("customList");
+      div.innerHTML = "";
+      list.forEach(c => {
+        const item = document.createElement("div");
+        item.className = "cocktail-item";
+        item.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}% - ${c.public ? "公開" : "私人"}`;
+        div.appendChild(item);
       });
     }
 
-    cocktailData.push(cocktail);
-    addToCustomList(cocktail);
-    alert('調酒儲存成功！');
-  } catch (e) {
-    console.error(e);
-    alert('儲存調酒失敗');
-  }
-}
+    function subscribeToPublicCocktails() {
+      const q = query(collection(db, "publicCocktails"), orderBy("votes", "desc"));
+      onSnapshot(q, snapshot => {
+        const list = document.getElementById("rankingList");
+        list.innerHTML = "";
+        snapshot.forEach(doc => {
+          const c = doc.data();
+          const div = document.createElement("div");
+          div.className = "cocktail-item";
+          div.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}% - 票數：${c.votes}`;
+          if (currentUser) {
+            const voteBtn = document.createElement("button");
+            voteBtn.textContent = "投票";
+            voteBtn.onclick = async () => {
+              const voteDoc = doc(db, "votes", `${currentUser.uid}_${c.name}`);
+              const voteSnap = await getDoc(voteDoc);
+              if (!voteSnap.exists()) {
+                await setDoc(voteDoc, { voted: true });
+                await updateDoc(doc.ref, { votes: increment(1) });
+              } else {
+                alert("你已經投過這杯了！");
+              }
+            };
+            div.appendChild(voteBtn);
+          }
+          list.appendChild(div);
+        });
+      });
+    }
 
-// 讀取使用者的自訂調酒（含公開與否）
-async function loadUserCocktails() {
-  if (!currentUser) return;
-  const snapshot = await db.collection('users')
-    .doc(currentUser.uid)
-    .collection('cocktails')
-    .orderBy('createdAt', 'asc')
-    .get();
+    async function searchCocktails() {
+      const maxPrice = Number(document.getElementById("searchPrice").value) || 2000;
+      const maxAlcohol = Number(document.getElementById("searchAlcohol").value) || 100;
 
-  cocktailData = [];
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    cocktailData.push(data);
-    addToCustomList(data);
-  });
-}
+      const q = query(collection(db, "publicCocktails"));
+      const snap = await getDocs(q);
 
-// 即時監聽排行榜
-function listenToRanking() {
-  db.collection('publicCocktails').orderBy('votes', 'desc')
-    .onSnapshot(snapshot => {
-      const ranking = [];
-      snapshot.forEach(doc => ranking.push({ id: doc.id, ...doc.data() }));
-      updateRanking(ranking);
-    });
-}
+      const resultDiv = document.getElementById("searchResults");
+      resultDiv.innerHTML = "";
+      snap.forEach(doc => {
+        const c = doc.data();
+        if (c.price <= maxPrice && c.alcohol <= maxAlcohol) {
+          const div = document.createElement("div");
+          div.className = "cocktail-item";
+          div.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}%`;
+          resultDiv.appendChild(div);
+        }
+      });
+    }
 
-// 投票
-async function vote(cocktailId) {
-  if (!currentUser) return alert('請先登入才能投票');
+    window.saveCustomCocktail = saveCustomCocktail;
+    window.searchCocktails = searchCocktails;
+  </script>
+</head>
+<body>
+  <h1>調酒master</h1>
 
-  const voteDocId = `${currentUser.uid}_${cocktailId}`;
-  const voteRef = db.collection('votes').doc(voteDocId);
-  const cocktailRef = db.collection('publicCocktails').doc(cocktailId);
+  <p id="userInfo">尚未登入</p>
+  <button id="signIn">Google 登入</button>
+  <button id="signOut">登出</button>
 
-  const voteDoc = await voteRef.get();
-  if (voteDoc.exists) return alert('你已投票過了');
+  <h2>新增自訂調酒</h2>
+  <input type="text" id="cName" placeholder="調酒名稱" required>
+  <input type="number" id="cPrice" placeholder="價錢" required>
+  <input type="number" id="cAlc" placeholder="酒精%" required>
+  <label><input type="checkbox" id="cPublic"> 公開</label>
+  <button onclick="saveCustomCocktail()">儲存</button>
 
-  await db.runTransaction(async (tx) => {
-    tx.set(voteRef, { user: currentUser.uid, cocktail: cocktailId });
-    const cocktailDoc = await tx.get(cocktailRef);
-    const votes = (cocktailDoc.data().votes || 0) + 1;
-    tx.update(cocktailRef, { votes });
-  });
+  <h2>我的調酒</h2>
+  <div id="customList"></div>
 
-  alert('投票成功');
-}
+  <h2>調酒排行榜（公開）</h2>
+  <div id="rankingList"></div>
 
-// 搜尋推薦
-async function searchCocktailsByCriteria(maxPrice, maxAlcohol) {
-  const snapshot = await db.collection('publicCocktails').get();
-  const filtered = [];
-  snapshot.forEach(doc => {
-    const data = doc.data();
-    if (data.price <= maxPrice && data.alcohol <= maxAlcohol) filtered.push(data);
-  });
-  updateSearchResults(filtered);
-}
-
-// UI 更新函式
-function addToCustomList(cocktail) {
-  const list = document.getElementById('custom-list');
-  const li = document.createElement('li');
-  li.textContent = `${cocktail.name} (${cocktail.isPublic ? '公開' : '私密'})`;
-  list.appendChild(li);
-}
-
-function updateRanking(cocktails) {
-  const list = document.getElementById('ranking-list');
-  list.innerHTML = '';
-  cocktails.forEach(c => {
-    const li = document.createElement('li');
-    li.textContent = `${c.name} - ${c.votes} 票`;
-    li.addEventListener('click', () => showCocktailDetail(c));
-    list.appendChild(li);
-  });
-}
-
-function updateSearchResults(results) {
-  const list = document.getElementById('search-results');
-  list.innerHTML = '';
-  results.forEach(c => {
-    const li = document.createElement('li');
-    li.textContent = `${c.name} - ${c.alcohol}% - $${c.price}`;
-    list.appendChild(li);
-  });
-}
-
-function showCocktailDetail(cocktail) {
-  alert(`名稱: ${cocktail.name}\n材料: ${cocktail.ingredients}\n做法: ${cocktail.instructions}\n酒精: ${cocktail.alcohol}%\n價格: $${cocktail.price}`);
-}
-
-// 初始監聽啟動
-listenToRanking();
+  <h2>搜尋推薦（公開酒譜）</h2>
+  <input type="number" id="searchPrice" placeholder="最大預算（預設2000）">
+  <input type="number" id="searchAlcohol" placeholder="最大酒精度（預設100）">
+  <button onclick="searchCocktails()">搜尋</button>
+  <div id="searchResults"></div>
+</body>
+</html>
