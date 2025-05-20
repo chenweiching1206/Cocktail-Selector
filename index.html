@@ -1,189 +1,166 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>調酒master</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>調酒 Master</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { margin-top: 40px; }
-    .cocktail-item { margin-bottom: 10px; }
-    button { margin-left: 10px; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f1ec;
+      color: #333;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    nav button.active { font-weight: bold; }
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, updateDoc, increment, onSnapshot, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <header>
+    <div id="logo">調酒 Master</div>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="頭像" />
+      <button id="login-btn">登入</button>
+      <button id="logout-btn" style="display: none;">登出</button>
+    </div>
+  </header>
+  <nav>
+    <button class="active" onclick="switchPage('page1', this)">自訂調酒</button>
+    <button onclick="switchPage('page2', this)">搜尋推薦</button>
+    <button onclick="switchPage('page3', this)">排行榜</button>
+  </nav>
+  <section id="page1" class="section active">
+    <h2>自訂你的調酒</h2>
+    <form id="custom-form">
+      <label>調酒名稱<input id="name" type="text" required></label>
+      <label>內容物<input id="ingredients" type="text" required></label>
+      <label>比例<input id="ratio" type="text"></label>
+      <label>口感描述<textarea id="description" rows="3"></textarea></label>
+      <label>價錢估計
+        <input id="price" type="range" min="0" max="2000" step="50" value="300" oninput="priceValue.innerText = this.value + ' 元'">
+        <span id="priceValue">300 元</span>
+      </label>
+      <label>是否公開<input id="isPublic" type="checkbox"></label>
+      <button type="submit">儲存酒譜</button>
+    </form>
+    <ul id="custom-list"></ul>
+  </section>
+  <section id="page2" class="section">
+    <h2>搜尋推薦調酒</h2>
+    <form id="search-form">
+      <label>預算（元）<input id="budget" type="number" min="0" step="50"></label>
+      <label>酒精濃度（目前未使用）<input type="number" min="0" max="100"></label>
+      <button type="submit">搜尋推薦</button>
+    </form>
+    <div id="recommendation-list"></div>
+  </section>
+  <section id="page3" class="section">
+    <h2>調酒排行榜</h2>
+    <ul id="ranking-list"></ul>
+  </section>
+  <script>
     const firebaseConfig = {
-      apiKey: "你的API金鑰",
-      authDomain: "你的專案.firebaseapp.com",
-      projectId: "你的project-id",
-      storageBucket: "你的project-id.appspot.com",
-      messagingSenderId: "你的發送者ID",
-      appId: "你的App ID"
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
     let currentUser = null;
 
-    const signInBtn = document.getElementById("signIn");
-    const signOutBtn = document.getElementById("signOut");
-    const userInfo = document.getElementById("userInfo");
+    function switchPage(id, btn) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
 
-    signInBtn.onclick = async () => {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-    };
-
-    signOutBtn.onclick = async () => {
-      await signOut(auth);
-    };
-
-    onAuthStateChanged(auth, async user => {
+    auth.onAuthStateChanged(user => {
       if (user) {
         currentUser = user;
-        userInfo.textContent = `登入中：${user.displayName}`;
-        document.getElementById("customList").innerHTML = "";
-        loadCustomCocktails();
-        subscribeToPublicCocktails();
+        document.getElementById('user-avatar').src = user.photoURL || '';
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline';
+        loadUserCocktails();
+        listenToRanking();
       } else {
         currentUser = null;
-        userInfo.textContent = "尚未登入";
-        document.getElementById("customList").innerHTML = "";
-        document.getElementById("rankingList").innerHTML = "";
+        document.getElementById('user-avatar').src = '';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+        document.getElementById('custom-list').innerHTML = '';
+        document.getElementById('ranking-list').innerHTML = '';
       }
     });
 
-    async function saveCustomCocktail() {
-      const name = document.getElementById("cName").value;
-      const price = Number(document.getElementById("cPrice").value);
-      const alcohol = Number(document.getElementById("cAlc").value);
-      const publicToggle = document.getElementById("cPublic").checked;
+    document.getElementById('login-btn').onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    document.getElementById('logout-btn').onclick = () => auth.signOut();
 
-      const newCocktail = { name, price, alcohol, public: publicToggle };
-      const userRef = doc(db, "users", currentUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      let list = [];
-      if (userSnap.exists()) {
-        list = userSnap.data().customCocktails || [];
-      }
-
-      list.push(newCocktail);
-      await setDoc(userRef, { customCocktails: list }, { merge: true });
-
-      if (publicToggle) {
-        await setDoc(doc(db, "publicCocktails", name), {
-          name,
-          price,
-          alcohol,
-          votes: 0
-        });
-      }
-
-      document.getElementById("cName").value = "";
-      document.getElementById("cPrice").value = "";
-      document.getElementById("cAlc").value = "";
-      document.getElementById("cPublic").checked = false;
-      loadCustomCocktails();
-    }
-
-    async function loadCustomCocktails() {
+    document.getElementById('custom-form').addEventListener('submit', async e => {
+      e.preventDefault();
       if (!currentUser) return;
-      const userRef = doc(db, "users", currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      const list = (userSnap.exists() ? userSnap.data().customCocktails : []) || [];
+      const name = document.getElementById('name').value;
+      const ingredients = document.getElementById('ingredients').value;
+      const ratio = document.getElementById('ratio').value;
+      const description = document.getElementById('description').value;
+      const price = parseInt(document.getElementById('price').value);
+      const isPublic = document.getElementById('isPublic').checked;
 
-      const div = document.getElementById("customList");
-      div.innerHTML = "";
-      list.forEach(c => {
-        const item = document.createElement("div");
-        item.className = "cocktail-item";
-        item.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}% - ${c.public ? "公開" : "私人"}`;
-        div.appendChild(item);
-      });
-    }
+      const cocktail = {
+        uid: currentUser.uid,
+        name, ingredients, ratio, description, price,
+        isPublic,
+        votes: 0,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
 
-    function subscribeToPublicCocktails() {
-      const q = query(collection(db, "publicCocktails"), orderBy("votes", "desc"));
-      onSnapshot(q, snapshot => {
-        const list = document.getElementById("rankingList");
-        list.innerHTML = "";
-        snapshot.forEach(doc => {
-          const c = doc.data();
-          const div = document.createElement("div");
-          div.className = "cocktail-item";
-          div.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}% - 票數：${c.votes}`;
-          if (currentUser) {
-            const voteBtn = document.createElement("button");
-            voteBtn.textContent = "投票";
-            voteBtn.onclick = async () => {
-              const voteDoc = doc(db, "votes", `${currentUser.uid}_${c.name}`);
-              const voteSnap = await getDoc(voteDoc);
-              if (!voteSnap.exists()) {
-                await setDoc(voteDoc, { voted: true });
-                await updateDoc(doc.ref, { votes: increment(1) });
-              } else {
-                alert("你已經投過這杯了！");
-              }
-            };
-            div.appendChild(voteBtn);
-          }
-          list.appendChild(div);
+      const docRef = await db.collection('cocktails').add(cocktail);
+
+      if (isPublic) {
+        await db.collection('ranking').doc(docRef.id).set({
+          name, price, votes: 0, timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
+      }
+
+      loadUserCocktails();
+    });
+
+    async function loadUserCocktails() {
+      const list = document.getElementById('custom-list');
+      list.innerHTML = '';
+      if (!currentUser) return;
+      const snapshot = await db.collection('cocktails')
+        .where('uid', '==', currentUser.uid)
+        .orderBy('timestamp', 'desc')
+        .get();
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement('li');
+        li.textContent = `${data.name} - $${data.price}`;
+        list.appendChild(li);
       });
     }
 
-    async function searchCocktails() {
-      const maxPrice = Number(document.getElementById("searchPrice").value) || 2000;
-      const maxAlcohol = Number(document.getElementById("searchAlcohol").value) || 100;
-
-      const q = query(collection(db, "publicCocktails"));
-      const snap = await getDocs(q);
-
-      const resultDiv = document.getElementById("searchResults");
-      resultDiv.innerHTML = "";
-      snap.forEach(doc => {
-        const c = doc.data();
-        if (c.price <= maxPrice && c.alcohol <= maxAlcohol) {
-          const div = document.createElement("div");
-          div.className = "cocktail-item";
-          div.textContent = `${c.name} - NT$${c.price} - ${c.alcohol}%`;
-          resultDiv.appendChild(div);
-        }
-      });
+    function listenToRanking() {
+      const list = document.getElementById('ranking-list');
+      db.collection('ranking').orderBy('votes', 'desc')
+        .onSnapshot(snapshot => {
+          list.innerHTML = '';
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = document.createElement('li');
+            li.textContent = `${data.name} - ${data.votes} 票`;
+            list.appendChild(li);
+          });
+        });
     }
-
-    window.saveCustomCocktail = saveCustomCocktail;
-    window.searchCocktails = searchCocktails;
   </script>
-</head>
-<body>
-  <h1>調酒master</h1>
-
-  <p id="userInfo">尚未登入</p>
-  <button id="signIn">Google 登入</button>
-  <button id="signOut">登出</button>
-
-  <h2>新增自訂調酒</h2>
-  <input type="text" id="cName" placeholder="調酒名稱" required>
-  <input type="number" id="cPrice" placeholder="價錢" required>
-  <input type="number" id="cAlc" placeholder="酒精%" required>
-  <label><input type="checkbox" id="cPublic"> 公開</label>
-  <button onclick="saveCustomCocktail()">儲存</button>
-
-  <h2>我的調酒</h2>
-  <div id="customList"></div>
-
-  <h2>調酒排行榜（公開）</h2>
-  <div id="rankingList"></div>
-
-  <h2>搜尋推薦（公開酒譜）</h2>
-  <input type="number" id="searchPrice" placeholder="最大預算（預設2000）">
-  <input type="number" id="searchAlcohol" placeholder="最大酒精度（預設100）">
-  <button onclick="searchCocktails()">搜尋</button>
-  <div id="searchResults"></div>
 </body>
 </html>
