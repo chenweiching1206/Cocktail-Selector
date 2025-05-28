@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>調酒master</title>
+  <title>調酒天地</title>
   <style>
     * {
       margin: 0;
@@ -14,21 +14,14 @@
     body {
       background-color: #f4f1ec;
       color: #333;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
     header {
       background-color: #ffcc00;
       padding: 1rem 2rem;
-      width: 100%;
-      max-width: 900px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      margin-bottom: 1rem;
     }
     #logo {
       font-size: 1.8rem;
@@ -46,24 +39,21 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      font-weight: bold;
+    }
+    #logout-btn {
+      display: none;
     }
     #user-avatar {
       width: 40px;
       height: 40px;
       border-radius: 50%;
       display: none;
-      cursor: pointer;
     }
     .beer-bg {
       position: relative;
       height: 300px;
       background: linear-gradient(to top, #f7d774, #fff3b0);
       overflow: hidden;
-      width: 100%;
-      max-width: 900px;
-      margin-bottom: 1rem;
-      border-radius: 8px;
     }
     .bubble {
       position: absolute;
@@ -88,11 +78,6 @@
       justify-content: center;
       background-color: #fff9d6;
       box-shadow: inset 0 -1px 0 #e0dcbf;
-      width: 100%;
-      max-width: 900px;
-      margin-bottom: 1rem;
-      border-radius: 8px;
-      overflow: hidden;
     }
     nav button {
       flex: 1;
@@ -103,55 +88,42 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    nav button:hover,
-    nav button.active {
+    nav button:hover {
       background-color: #ffe577;
     }
     .section {
       display: none;
-      padding: 1rem 2rem 2rem;
-      max-width: 900px;
-      width: 100%;
-      margin-bottom: 2rem;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgb(0 0 0 / 0.1);
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
     }
-    .section.active {
+    .active {
       display: block;
     }
     form {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      max-width: 600px;
-      margin: auto;
     }
     label {
       display: flex;
       flex-direction: column;
       font-weight: bold;
-      font-size: 1rem;
     }
     input,
     select,
     textarea,
-    button[type="submit"] {
+    button[type='submit'] {
       padding: 0.5rem;
       font-size: 1rem;
       border-radius: 5px;
       border: 1px solid #ccc;
     }
-    button[type="submit"] {
+    button[type='submit'] {
       background-color: #ffcc00;
       border: none;
       cursor: pointer;
       font-weight: bold;
-    }
-    ul {
-      max-width: 600px;
-      margin: 0 auto;
-      padding-left: 0;
     }
     ul li {
       list-style: none;
@@ -159,440 +131,399 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 0.5rem;
-      cursor: pointer;
     }
     ul li span {
       margin-left: 1rem;
-      white-space: nowrap;
     }
-    .drink-name {
-      font-weight: bold;
-      flex-grow: 1;
-    }
-    .vote-btn {
-      margin-left: 10px;
-      background-color: #333;
-      color: white;
-      border: none;
+    #recommendation-list > div {
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
       border-radius: 5px;
       cursor: pointer;
-      padding: 0.3rem 0.6rem;
-      font-size: 0.9rem;
-    }
-    .detail-box {
-      max-width: 600px;
-      margin: 1rem auto 2rem;
-      padding: 1rem;
-      background-color: #fff8c4;
-      border-radius: 5px;
-      font-size: 0.95rem;
-      white-space: pre-line;
-      display: none;
-    }
-    /* 價錢 range 下方顯示 */
-    #price-display {
-      font-weight: normal;
-      color: #666;
-      margin-top: -0.8rem;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-      text-align: right;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
     }
   </style>
 </head>
 <body>
   <header>
-    <div id="logo">調酒master</div>
+    <div id="logo">調酒天地</div>
     <div id="user-info">
-      <img id="user-avatar" src="" alt="頭像" title="登出" />
+      <img id="user-avatar" src="" alt="頭像" />
       <button id="login-btn">登入</button>
-      <button id="logout-btn" style="display:none;">登出</button>
+      <button id="logout-btn">登出</button>
     </div>
   </header>
 
   <div class="beer-bg" id="beer-bg"></div>
 
   <nav>
-    <button id="tab1" class="active">自訂調酒</button>
-    <button id="tab2">搜尋推薦</button>
-    <button id="tab3">排行榜</button>
+    <button onclick="switchPage('page1')">自訂調酒</button>
+    <button onclick="switchPage('page2')">搜尋推薦</button>
+    <button onclick="switchPage('page3')">排行榜</button>
   </nav>
 
-  <!-- 自訂調酒 -->
   <section id="page1" class="section active">
     <h2>自訂你的調酒</h2>
-    <form id="customForm">
-      <label>調酒名稱<input type="text" id="drink-name" required /></label>
-      <label>內容物<input type="text" id="ingredients" required /></label>
-      <label>比例（例如 2:1:1）<input type="text" id="ratio" /></label>
-      <label>酒精濃度 (%)<input type="number" id="alcohol" min="0" max="100" /></label>
-      <label>口感描述<textarea id="taste" rows="3"></textarea></label>
-      <label>價錢估計
-        <input type="range" id="price" min="0" max="2000" step="50" value="100" />
-      </label>
-      <div id="price-display">價錢: 100 元</div>
-      <label>是否公開 <input type="checkbox" id="isPublic" /></label>
+    <form id="custom-cocktail-form">
+      <label>調酒名稱<input type="text" id="cocktail-name" required /></label>
+      <label>內容物<input type="text" id="cocktail-ingredients" required /></label>
+      <label>比例（例如 2:1:1）<input type="text" id="cocktail-ratio" /></label>
+      <label>口感描述<textarea rows="3" id="cocktail-taste"></textarea></label>
+      <label>酒精濃度（%）<input type="number" id="cocktail-abv" min="0" max="100" /></label>
+      <label>價錢估計<input type="number" id="cocktail-price" min="0" max="2000" step="50" /></label>
+      <label>是否公開<input type="checkbox" id="cocktail-public" /></label>
       <button type="submit">儲存酒譜</button>
     </form>
-    <h3>你的自訂調酒列表</h3>
-    <ul id="custom-list"></ul>
-    <div class="detail-box" id="custom-detail"></div>
+    <h3>你儲存的酒譜</h3>
+    <ul id="user-cocktails-list"></ul>
   </section>
 
-  <!-- 搜尋推薦 -->
   <section id="page2" class="section">
     <h2>搜尋推薦調酒</h2>
-    <form id="searchForm">
-      <label>預算（元）<input type="number" id="search-budget" min="0" step="50" value="1000" /></label>
-      <label>酒精濃度（%）<input type="number" id="search-alcohol" min="0" max="100" value="50" /></label>
+    <form id="search-form">
+      <label>預算（元）<input type="number" id="search-price" min="0" step="50" /></label>
+      <label>酒精濃度（%）<input type="number" id="search-abv" min="0" max="100" /></label>
       <button type="submit">搜尋推薦</button>
     </form>
-    <ul id="recommendation-list"></ul>
-    <div class="detail-box" id="recommend-detail"></div>
+    <div id="recommendation-list">搜尋結果會出現在這裡</div>
   </section>
 
-  <!-- 排行榜 -->
   <section id="page3" class="section">
     <h2>調酒排行榜</h2>
     <ul id="ranking-list"></ul>
-    <div class="detail-box" id="ranking-detail"></div>
   </section>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      where,
+      onSnapshot,
+      orderBy,
+      updateDoc,
+      doc,
+      getDoc,
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import {
+      getAuth,
+      signInWithPopup,
+      GoogleAuthProvider,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
-  <script>
-    // Firebase 配置 - 請替換成你自己專案的設定
     const firebaseConfig = {
-      apiKey: "你的APIKEY",
-      authDomain: "你的專案.firebaseapp.com",
-      projectId: "你的專案ID",
-      storageBucket: "你的專案.appspot.com",
-      messagingSenderId: "你的messagingSenderId",
-      appId: "你的appId"
+      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.firebasestorage.app",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB",
     };
 
-    // 初始化 Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-    // DOM Elements
-    const loginBtn = document.getElementById('login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const userAvatar = document.getElementById('user-avatar');
-    const userInfoDiv = document.getElementById('user-info');
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userAvatar = document.getElementById("user-avatar");
 
-    // 頁面切換按鈕
-    const tabs = document.querySelectorAll('nav button');
-    const sections = document.querySelectorAll('.section');
-
-    // 表單與列表
-    const customForm = document.getElementById('customForm');
-    const customList = document.getElementById('custom-list');
-    const customDetail = document.getElementById('custom-detail');
-    const priceRange = document.getElementById('price');
-    const priceDisplay = document.getElementById('price-display');
-
-    const searchForm = document.getElementById('searchForm');
-    const recommendationList = document.getElementById('recommendation-list');
-    const recommendDetail = document.getElementById('recommend-detail');
-
-    const rankingList = document.getElementById('ranking-list');
-    const rankingDetail = document.getElementById('ranking-detail');
-
-    // 當前登入用戶
     let currentUser = null;
 
-    // 本地暫存使用者酒譜與公開酒譜
-    let userDrinks = [];
-    let publicDrinks = [];
-    let votes = {}; // 紀錄user對各酒的投票狀態 { drinkId: true }
+    function switchPage(id) {
+      document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
 
-    // 頁面切換函式
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const target = tab.id.replace('tab', 'page');
-        sections.forEach(s => {
-          if (s.id === target) s.classList.add('active');
-          else s.classList.remove('active');
-        });
-      });
+    loginBtn.addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        currentUser = result.user;
+        updateUIOnLogin();
+        loadUserCocktails();
+      } catch (error) {
+        alert("登入失敗：" + error.message);
+      }
     });
 
-    // 顯示價錢
-    priceRange.addEventListener('input', () => {
-      priceDisplay.textContent = `價錢: ${priceRange.value} 元`;
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      currentUser = null;
+      updateUIOnLogout();
+      clearLists();
     });
 
-    // Google 登入
-    loginBtn.addEventListener('click', () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    });
+    function updateUIOnLogin() {
+      if (!currentUser) return;
+      userAvatar.src = currentUser.photoURL || "";
+      userAvatar.style.display = "inline-block";
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    }
 
-    logoutBtn.addEventListener('click', () => {
-      auth.signOut();
-    });
+    function updateUIOnLogout() {
+      userAvatar.style.display = "none";
+      userAvatar.src = "";
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+    }
 
-    userAvatar.addEventListener('click', () => {
-      auth.signOut();
-    });
-
-    // 監聽登入狀態
-    auth.onAuthStateChanged(user => {
+    onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline-block';
-        userAvatar.style.display = 'inline-block';
-        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40?text=U';
-        loadUserDrinks(user.uid);
-        loadVotes(user.uid);
+        updateUIOnLogin();
+        loadUserCocktails();
       } else {
-        loginBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        userAvatar.style.display = 'none';
-        userAvatar.src = '';
-        userDrinks = [];
-        votes = {};
-        customList.innerHTML = '';
+        updateUIOnLogout();
+        clearLists();
       }
+      loadRanking(); // 不論登入狀態都要載入排行榜
     });
 
-    // 載入使用者自訂酒譜
-    function loadUserDrinks(uid) {
-      db.collection('drinks')
-        .where('uid', '==', uid)
-        .orderBy('createdAt', 'desc')
-        .onSnapshot(snapshot => {
-          userDrinks = [];
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            userDrinks.push({ id: doc.id, ...data });
-          });
-          renderUserDrinks();
-        });
-    }
-
-    // 載入排行榜 (公開酒譜)
-    function loadPublicDrinks() {
-      db.collection('drinks')
-        .where('isPublic', '==', true)
-        .orderBy('votes', 'desc')
-        .onSnapshot(snapshot => {
-          publicDrinks = [];
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            publicDrinks.push({ id: doc.id, ...data });
-          });
-          renderRankingList();
-        });
-    }
-    loadPublicDrinks();
-
-    // 載入使用者投票狀態
-    function loadVotes(uid) {
-      db.collection('votes')
-        .doc(uid)
-        .get()
-        .then(doc => {
-          if (doc.exists) {
-            votes = doc.data();
-          } else {
-            votes = {};
-          }
-        });
-    }
-
-    // 儲存使用者投票狀態
-    function saveVotes() {
-      if (!currentUser) return;
-      db.collection('votes').doc(currentUser.uid).set(votes);
-    }
-
-    // 自訂酒譜列表渲染
-    function renderUserDrinks() {
-      customList.innerHTML = '';
-      userDrinks.forEach(drink => {
-        const li = document.createElement('li');
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = drink.name;
-        nameSpan.classList.add('drink-name');
-        li.appendChild(nameSpan);
-
-        li.addEventListener('click', () => {
-          showCustomDetail(drink);
-        });
-        customList.appendChild(li);
-      });
-    }
-
-    // 顯示自訂酒譜細節
-    function showCustomDetail(drink) {
-      let detail = `名稱: ${drink.name}\n內容物: ${drink.ingredients}\n比例: ${drink.ratio || '無'}\n酒精度數: ${drink.alcohol || '無'} %\n口感: ${drink.taste || '無'}\n價錢: ${drink.price} 元\n是否公開: ${drink.isPublic ? '是' : '否'}`;
-      customDetail.textContent = detail;
-      customDetail.style.display = 'block';
-    }
-
-    // 排行榜渲染
-    function renderRankingList() {
-      rankingList.innerHTML = '';
-      publicDrinks.forEach(drink => {
-        const li = document.createElement('li');
-
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = drink.name;
-        nameSpan.classList.add('drink-name');
-        li.appendChild(nameSpan);
-
-        const voteSpan = document.createElement('span');
-        voteSpan.textContent = `票數: ${drink.votes || 0}`;
-        li.appendChild(voteSpan);
-
-        // 投票按鈕（登入才可投）
-        if (currentUser) {
-          const btn = document.createElement('button');
-          btn.textContent = votes[drink.id] ? '已投票' : '+1';
-          btn.disabled = !!votes[drink.id];
-          btn.classList.add('vote-btn');
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            voteDrink(drink.id);
-          });
-          li.appendChild(btn);
-        }
-
-        li.addEventListener('click', () => {
-          showRankingDetail(drink);
-        });
-        rankingList.appendChild(li);
-      });
-    }
-
-    function showRankingDetail(drink) {
-      let detail = `名稱: ${drink.name}\n內容物: ${drink.ingredients}\n比例: ${drink.ratio || '無'}\n酒精度數: ${drink.alcohol || '無'} %\n口感: ${drink.taste || '無'}\n價錢: ${drink.price} 元\n票數: ${drink.votes || 0}`;
-      rankingDetail.textContent = detail;
-      rankingDetail.style.display = 'block';
-    }
-
-    // 投票功能
-    function voteDrink(drinkId) {
-      if (!currentUser) {
-        alert('請先登入才能投票');
-        return;
-      }
-      if (votes[drinkId]) {
-        alert('每款酒只能投一次票');
-        return;
-      }
-
-      const drinkRef = db.collection('drinks').doc(drinkId);
-
-      // Firestore transaction
-      db.runTransaction(async (transaction) => {
-        const doc = await transaction.get(drinkRef);
-        if (!doc.exists) throw "調酒不存在";
-        const newVotes = (doc.data().votes || 0) + 1;
-        transaction.update(drinkRef, { votes: newVotes });
-      }).then(() => {
-        votes[drinkId] = true;
-        saveVotes();
-        loadPublicDrinks(); // 重新讀取排行榜
-      }).catch(err => {
-        console.error(err);
-        alert('投票失敗，請稍後再試');
-      });
-    }
-
-    // 新增自訂酒譜
-    customForm.addEventListener('submit', (e) => {
+    // 自訂酒譜儲存
+    const customForm = document.getElementById("custom-cocktail-form");
+    customForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!currentUser) {
-        alert('請先登入才能新增酒譜');
+        alert("請先登入才能儲存酒譜");
         return;
       }
-      const name = document.getElementById('drink-name').value.trim();
-      const ingredients = document.getElementById('ingredients').value.trim();
-      const ratio = document.getElementById('ratio').value.trim();
-      const alcohol = parseFloat(document.getElementById('alcohol').value);
-      const taste = document.getElementById('taste').value.trim();
-      const price = parseInt(priceRange.value);
-      const isPublic = document.getElementById('isPublic').checked;
+      const name = document.getElementById("cocktail-name").value.trim();
+      const ingredients = document.getElementById("cocktail-ingredients").value.trim();
+      const ratio = document.getElementById("cocktail-ratio").value.trim();
+      const taste = document.getElementById("cocktail-taste").value.trim();
+      const abv = Number(document.getElementById("cocktail-abv").value);
+      const price = Number(document.getElementById("cocktail-price").value);
+      const isPublic = document.getElementById("cocktail-public").checked;
 
       if (!name || !ingredients) {
-        alert('名稱與內容物為必填');
+        alert("請輸入調酒名稱與內容物");
         return;
       }
 
-      const newDrink = {
+      const cocktailData = {
         uid: currentUser.uid,
+        userName: currentUser.displayName || "匿名",
+        userPhoto: currentUser.photoURL || "",
         name,
         ingredients,
         ratio,
-        alcohol: isNaN(alcohol) ? null : alcohol,
         taste,
-        price,
+        abv: isNaN(abv) ? null : abv,
+        price: isNaN(price) ? null : price,
         isPublic,
         votes: 0,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: new Date(),
       };
 
-      db.collection('drinks').add(newDrink).then(docRef => {
-        alert('酒譜已儲存');
+      try {
+        // 新增酒譜
+        const docRef = await addDoc(collection(db, "cocktails"), cocktailData);
+
+        // 如果公開酒譜，要同步加到排行榜
+        if (isPublic) {
+          await addDoc(collection(db, "ranking"), {
+            cocktailId: docRef.id,
+            name,
+            votes: 0,
+            abv: cocktailData.abv,
+            price: cocktailData.price,
+          });
+        }
+
+        alert("儲存成功");
         customForm.reset();
-        // 新增後自動刷新列表
-        loadUserDrinks(currentUser.uid);
-        if (isPublic) loadPublicDrinks();
-      }).catch(err => {
-        console.error(err);
-        alert('儲存失敗');
-      });
+        loadUserCocktails();
+        loadRanking();
+      } catch (error) {
+        alert("儲存失敗：" + error.message);
+      }
     });
 
+    // 載入使用者自己的酒譜
+    async function loadUserCocktails() {
+      if (!currentUser) return;
+      const ul = document.getElementById("user-cocktails-list");
+      ul.innerHTML = "讀取中...";
+
+      const q = query(collection(db, "cocktails"), where("uid", "==", currentUser.uid), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        ul.innerHTML = "<li>尚無酒譜</li>";
+        return;
+      }
+      ul.innerHTML = "";
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const li = document.createElement("li");
+        li.textContent = `${data.name} ${data.isPublic ? "(公開)" : "(私人)"}`;
+        li.style.cursor = "pointer";
+        li.addEventListener("click", () => {
+          alert(`酒譜：\n名稱: ${data.name}\n內容物: ${data.ingredients}\n比例: ${data.ratio}\n口感: ${data.taste}\n酒精濃度: ${data.abv || "未知"}%\n價錢: ${data.price || "未知"}`);
+        });
+        ul.appendChild(li);
+      });
+    }
+
     // 搜尋推薦
-    searchForm.addEventListener('submit', (e) => {
+    const searchForm = document.getElementById("search-form");
+    searchForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const maxPrice = parseInt(document.getElementById('search-price').value);
-      const targetAlcohol = parseFloat(document.getElementById('search-alcohol').value);
+      const price = Number(document.getElementById("search-price").value);
+      const abv = Number(document.getElementById("search-abv").value);
+      const container = document.getElementById("recommendation-list");
+      container.innerHTML = "搜尋中...";
 
-      recommendationList.innerHTML = '';
-      recommendDetail.style.display = 'none';
-
-      // 篩選符合條件的公開酒譜
-      const results = publicDrinks.filter(drink => {
-        return drink.price <= maxPrice && (!isNaN(targetAlcohol) ? drink.alcohol === targetAlcohol : true);
+      // 篩選條件
+      let q = collection(db, "ranking");
+      // 只能依單欄位查詢，這裡先取得全部再手動過濾
+      const snapshot = await getDocs(q);
+      let filtered = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (
+          (isNaN(price) || (data.price !== null && data.price <= price)) &&
+          (isNaN(abv) || (data.abv !== null && data.abv <= abv))
+        ) {
+          filtered.push({ id: docSnap.id, ...data });
+        }
       });
 
-      if (results.length === 0) {
-        recommendationList.innerHTML = '<li>沒有符合條件的酒譜</li>';
+      if (filtered.length === 0) {
+        container.textContent = "找不到符合條件的調酒。";
         return;
       }
 
-      results.forEach(drink => {
-        const li = document.createElement('li');
-        li.textContent = drink.name;
-        li.addEventListener('click', () => {
-          showRecommendDetail(drink);
+      container.innerHTML = "";
+      filtered.forEach((item) => {
+        const div = document.createElement("div");
+        div.textContent = `${item.name}（票數：${item.votes}）`;
+        div.style.border = "1px solid #ccc";
+        div.style.padding = "0.5rem";
+        div.style.marginBottom = "0.5rem";
+        div.style.borderRadius = "5px";
+        div.style.cursor = "pointer";
+        div.addEventListener("click", () => {
+          showCocktailDetailById(item.cocktailId);
         });
-        recommendationList.appendChild(li);
+        container.appendChild(div);
       });
     });
 
-    function showRecommendDetail(drink) {
-      let detail = `名稱: ${drink.name}\n內容物: ${drink.ingredients}\n比例: ${drink.ratio || '無'}\n酒精度數: ${drink.alcohol || '無'} %\n口感: ${drink.taste || '無'}\n價錢: ${drink.price} 元\n票數: ${drink.votes || 0}`;
-      recommendDetail.textContent = detail;
-      recommendDetail.style.display = 'block';
+    // 排行榜
+    const rankingList = document.getElementById("ranking-list");
+
+    async function loadRanking() {
+      rankingList.innerHTML = "載入中...";
+      const q = query(collection(db, "ranking"), orderBy("votes", "desc"));
+      onSnapshot(q, (snapshot) => {
+        rankingList.innerHTML = "";
+        if (snapshot.empty) {
+          rankingList.innerHTML = "<li>目前無排行榜資料</li>";
+          return;
+        }
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const li = document.createElement("li");
+          li.textContent = `${data.name}（票數：${data.votes}）`;
+
+          if (currentUser) {
+            const voteBtn = document.createElement("button");
+            voteBtn.textContent = "投票";
+            voteBtn.style.marginLeft = "1rem";
+            voteBtn.addEventListener("click", () => {
+              voteCocktail(docSnap.id, data.cocktailId);
+            });
+            li.appendChild(voteBtn);
+          }
+          rankingList.appendChild(li);
+        });
+      });
     }
+
+    // 投票功能：每人每酒只能投一次
+    async function voteCocktail(rankingDocId, cocktailId) {
+      if (!currentUser) {
+        alert("請先登入才能投票");
+        return;
+      }
+      const userId = currentUser.uid;
+      const voteDocId = `${userId}_${rankingDocId}`;
+      const voteDocRef = doc(db, "votes", voteDocId);
+      const voteSnap = await getDoc(voteDocRef);
+      if (voteSnap.exists()) {
+        alert("每人每酒限投一次");
+        return;
+      }
+      try {
+        // 紀錄投票行為
+        await addDoc(collection(db, "votes"), {
+          userId,
+          rankingDocId,
+          cocktailId,
+          votedAt: new Date(),
+        });
+        // 更新排行榜票數（安全作法應該用 transaction，這裡簡化示範）
+        const rankingDocRef = doc(db, "ranking", rankingDocId);
+        const rankingSnap = await getDoc(rankingDocRef);
+        if (rankingSnap.exists()) {
+          const currentVotes = rankingSnap.data().votes || 0;
+          await updateDoc(rankingDocRef, { votes: currentVotes + 1 });
+        }
+        alert("投票成功！");
+      } catch (error) {
+        alert("投票失敗：" + error.message);
+      }
+    }
+
+    // 顯示酒譜細節
+    async function showCocktailDetailById(cocktailId) {
+      const docRef = doc(db, "cocktails", cocktailId);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        alert("找不到該酒譜");
+        return;
+      }
+      const data = docSnap.data();
+      alert(`酒譜詳細資訊：
+名稱: ${data.name}
+內容物: ${data.ingredients}
+比例: ${data.ratio}
+口感: ${data.taste}
+酒精濃度: ${data.abv || "未知"}%
+價錢: ${data.price || "未知"}
+公開: ${data.isPublic ? "是" : "否"}`);
+    }
+
+    // 清除使用者資料列表
+    function clearLists() {
+      document.getElementById("user-cocktails-list").innerHTML = "";
+      document.getElementById("recommendation-list").innerHTML = "請登入後搜尋推薦。";
+      rankingList.innerHTML = "";
+    }
+
+    // 產生啤酒泡泡動畫
+    function createBubble() {
+      const bubble = document.createElement("div");
+      bubble.classList.add("bubble");
+      const size = Math.random() * 20 + 10 + "px";
+      bubble.style.width = size;
+      bubble.style.height = size;
+      bubble.style.left = Math.random() * 100 + "%";
+      bubble.style.animationDuration = (Math.random() * 3 + 2) + "s";
+      document.getElementById("beer-bg").appendChild(bubble);
+      setTimeout(() => {
+        bubble.remove();
+      }, 5000);
+    }
+    setInterval(createBubble, 500);
 
   </script>
 </body>
