@@ -2,9 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>調酒天地</title>
   <style>
+    /* 你的 CSS 保持不變 */
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
     body { background: #f4f1ec; color: #333; }
     header { background: #ffcc00; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -23,10 +24,8 @@
     input, textarea, button[type="submit"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px; }
     button[type="submit"] { background: #ffcc00; border: none; cursor: pointer; font-weight: bold; }
     ul li { list-style: none; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-    .beer-bg { position: relative; height: 300px; background: linear-gradient(to top, #f7d774, #fff3b0); overflow: hidden; }
     .bubble { position: absolute; bottom: 0; background: white; border-radius: 50%; opacity: 0.7; animation: rise 5s infinite ease-in; }
     @keyframes rise { 0% { transform: translateY(0); opacity: 0.7; } 100% { transform: translateY(-300px); opacity: 0; } }
-    #price-display { font-weight: bold; }
     .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; }
   </style>
 </head>
@@ -37,16 +36,14 @@
     <div id="user-controls">
       <img id="user-avatar" src="" alt="頭像" />
       <button id="login-btn">登入</button>
-      <button id="logout-btn" style="display: none;">登出</button>
+      <button id="logout-btn" style="display:none;">登出</button>
     </div>
   </header>
-  <div class="beer-bg" id="beer-bg"></div>
   <nav>
     <button onclick="switchPage('page1')">自訂調酒</button>
     <button onclick="switchPage('page2')">搜尋推薦</button>
     <button onclick="switchPage('page3')">排行榜</button>
   </nav>
-
   <section id="page1" class="section active">
     <h2>自訂你的調酒</h2>
     <form id="custom-form">
@@ -64,7 +61,6 @@
     </form>
     <ul id="custom-list"></ul>
   </section>
-
   <section id="page2" class="section">
     <h2>搜尋推薦調酒</h2>
     <form id="search-form">
@@ -74,7 +70,6 @@
     </form>
     <ul id="search-result"></ul>
   </section>
-
   <section id="page3" class="section">
     <h2>調酒排行榜</h2>
     <ul id="rank-list"></ul>
@@ -84,19 +79,22 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
 
   <script>
-    // 你的原本價格控制
+    // 價錢顯示控制
     const price = document.getElementById('price');
     const priceDisplay = document.getElementById('price-display');
     price.addEventListener('input', () => priceDisplay.textContent = price.value);
 
-    const cocktailData = [];
-
+    // 頁籤切換
     function switchPage(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
       if (id === 'page3') updateRankList();
     }
 
+    // 調酒資料暫存
+    const cocktailData = [];
+
+    // 自訂酒譜表單送出
     document.getElementById('custom-form').addEventListener('submit', e => {
       e.preventDefault();
       const data = {
@@ -111,42 +109,49 @@
       };
       cocktailData.push(data);
       renderCustomList();
-      document.getElementById('custom-form').reset();
+      e.target.reset();
       priceDisplay.textContent = '100';
     });
 
+    // 顯示自訂酒譜列表
     function renderCustomList() {
       const list = document.getElementById('custom-list');
       list.innerHTML = '';
-      cocktailData.forEach((item, i) => {
+      cocktailData.forEach(item => {
         const li = document.createElement('li');
         const span = document.createElement('span');
         span.className = 'cocktail-item';
         span.textContent = item.name;
-        span.onclick = () => alert(`名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`);
+        span.onclick = () => alert(
+          `名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`
+        );
         li.appendChild(span);
         list.appendChild(li);
       });
     }
 
+    // 搜尋推薦
     document.getElementById('search-form').addEventListener('submit', e => {
       e.preventDefault();
       const budget = parseInt(document.getElementById('search-budget').value) || 0;
       const abv = parseInt(document.getElementById('search-abv').value) || 0;
-      const result = cocktailData.filter(item => item.public && item.price <= budget && item.abv <= abv);
+      const results = cocktailData.filter(item => item.public && item.price <= budget && item.abv <= abv);
       const ul = document.getElementById('search-result');
       ul.innerHTML = '';
-      result.forEach(item => {
+      results.forEach(item => {
         const li = document.createElement('li');
         const span = document.createElement('span');
         span.className = 'cocktail-item';
         span.textContent = item.name;
-        span.onclick = () => alert(`名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`);
+        span.onclick = () => alert(
+          `名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`
+        );
         li.appendChild(span);
         ul.appendChild(li);
       });
     });
 
+    // 排行榜更新
     function updateRankList() {
       const ul = document.getElementById('rank-list');
       ul.innerHTML = '';
@@ -162,38 +167,36 @@
 
     // Firebase 初始化
     const firebaseConfig = {
-      // Firebase 初始化
       apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
-  authDomain: "cocktail-selector-a1b46.firebaseapp.com",
-  projectId: "cocktail-selector-a1b46",
-  storageBucket: "cocktail-selector-a1b46.firebasestorage.app",
-  messagingSenderId: "213382733661",
-  appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
-  measurementId: "G-LC2T6DR3HB"
-
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.appspot.com",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // 改用 header 內新 id
+    // DOM 元素
     const userNameDiv = document.getElementById('user-name');
-    const userControlsDiv = document.getElementById('user-controls');
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const userAvatar = document.getElementById('user-avatar');
 
+    // 登入按鈕事件
     loginBtn.addEventListener('click', () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider);
+      auth.signInWithPopup(provider).catch(console.error);
     });
 
+    // 登出按鈕事件
     logoutBtn.addEventListener('click', () => {
-      auth.signOut();
+      auth.signOut().catch(console.error);
     });
 
+    // 監聽登入狀態變更
     auth.onAuthStateChanged(user => {
       if (user) {
         loginBtn.style.display = 'none';
@@ -209,7 +212,6 @@ const auth = firebase.auth();
         userNameDiv.textContent = '';
       }
     });
-
   </script>
 </body>
 </html>
