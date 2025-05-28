@@ -31,6 +31,7 @@
 </head>
 <body>
   <header>
+    <div id="user-info" style="margin-top: 10px; font-weight: bold;"></div>
     <div id="logo">調酒天地</div>
     <div id="user-info">
       <img id="user-avatar" src="" alt="頭像">
@@ -176,5 +177,36 @@
       bg.appendChild(bubble);
     }
   </script>
+  import { initializeApp } from "firebase/app";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+
+// 你的 firebaseConfig（已提供）
+const firebaseConfig = {
+  apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+  authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+  projectId: "cocktail-selector-a1b46",
+  storageBucket: "cocktail-selector-a1b46.firebasestorage.app",
+  messagingSenderId: "213382733661",
+  appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+  measurementId: "G-LC2T6DR3HB"
+};
+
+// 初始化 Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+// 登入函式
+function signIn() {
+  signInWithPopup(auth, provider)
+    .then((result) => {
+      const user = result.user;
+      console.log("登入成功！", user.displayName);
+    })
+    .catch((error) => {
+      console.error("登入失敗：", error.message);
+    });
+}
+
 </body>
 </html>
