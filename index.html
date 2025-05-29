@@ -1,61 +1,134 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鸡尾酒选择器</title>
-    <!-- 引入Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
-    
-    <!-- 你的其他样式保持不变 -->
-    <style>
-        /* 你原有的所有样式保持不变 */
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>調酒天地</title>
+  <style>
+    /* 你的 CSS 完全保留不變 */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+    body { background: #f4f1ec; color: #333; }
+    header { background: #ffcc00; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    #logo { font-size: 1.8rem; font-weight: bold; }
+    nav { display: flex; justify-content: center; background: #fff9d6; box-shadow: inset 0 -1px 0 #e0dcbf; }
+    nav button { flex: 1; padding: 1rem; border: none; background: none; font-size: 1rem; cursor: pointer; }
+    nav button:hover { background: #ffe577; }
+    .section { display: none; padding: 2rem; max-width: 800px; margin: auto; }
+    .active { display: block; }
+    form { display: flex; flex-direction: column; gap: 1rem; }
+    label { font-weight: bold; display: flex; flex-direction: column; }
+    input, textarea, button[type="submit"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px; }
+    button[type="submit"] { background: #ffcc00; border: none; cursor: pointer; font-weight: bold; }
+    ul li { list-style: none; margin-bottom: 1rem; }
+  </style>
 </head>
 <body>
-    <!-- 你原有的所有HTML内容保持不变 -->
-    
-    <script>
-        // 初始化Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
-            authDomain: "cocktail-selector-a1b46.firebaseapp.com",
-            projectId: "cocktail-selector-a1b46",
-            storageBucket: "cocktail-selector-a1b46.appspot.com",
-            messagingSenderId: "213382733661",
-            appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
-            measurementId: "G-LC2T6DR3HB"
-        };
+  <header>
+    <div id="logo">調酒天地</div>
+  </header>
+  <nav>
+    <button onclick="switchPage('page1')">自訂調酒</button>
+    <button onclick="switchPage('page2')">搜尋推薦</button>
+    <button onclick="switchPage('page3')">排行榜</button>
+  </nav>
 
-        // 初始化Firebase应用
-        const app = firebase.initializeApp(firebaseConfig);
-        const analytics = firebase.analytics(app);
-        
-        // 初始化Firestore并启用长轮询解决400错误
-        const db = firebase.firestore(app);
-        db.settings({
-            experimentalForceLongPolling: true
+  <section id="page1" class="section active">
+    <h2>自訂你的調酒</h2>
+    <form id="custom-form">
+      <label>調酒名稱<input type="text" id="name" required /></label>
+      <label>內容物<input type="text" id="ingredients" required /></label>
+      <label>比例<input type="text" id="ratio" /></label>
+      <label>酒精濃度（%）<input type="number" id="abv" min="0" max="100" /></label>
+      <label>口感描述<textarea id="description" rows="3"></textarea></label>
+      <label>價錢估計
+        <input type="range" id="price" min="100" max="1000" step="50" />
+        <span id="price-display">100</span> 元
+      </label>
+      <label>是否公開<input type="checkbox" id="public" /></label>
+      <button type="submit">儲存酒譜</button>
+    </form>
+    <ul id="custom-list"></ul>
+  </section>
+
+  <section id="page2" class="section">
+    <h2>搜尋推薦調酒</h2>
+  </section>
+  <section id="page3" class="section">
+    <h2>調酒排行榜</h2>
+  </section>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // 價錢顯示
+    const price = document.getElementById('price');
+    const priceDisplay = document.getElementById('price-display');
+    price.addEventListener('input', () => priceDisplay.textContent = price.value);
+
+    // 切換頁面
+    function switchPage(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Firebase 設定與初始化
+    const firebaseConfig = {
+      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+      projectId: "cocktail-selector-a1b46",
+      storageBucket: "cocktail-selector-a1b46.appspot.com",
+      messagingSenderId: "213382733661",
+      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+      measurementId: "G-LC2T6DR3HB"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // 表單送出事件
+    document.getElementById('custom-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value.trim();
+      const ingredients = document.getElementById('ingredients').value.trim();
+      const ratio = document.getElementById('ratio').value.trim();
+      const abv = parseFloat(document.getElementById('abv').value) || 0;
+      const description = document.getElementById('description').value.trim();
+      const priceVal = parseInt(document.getElementById('price').value);
+      const isPublic = document.getElementById('public').checked;
+
+      try {
+        await db.collection('cocktails').add({
+          name, ingredients, ratio, abv, description, price: priceVal, public: isPublic
         });
 
-        // 启用持久化缓存
-        db.enablePersistence()
-            .catch((err) => {
-                console.warn("持久化缓存启用失败:", err);
-            });
+        alert("酒譜已儲存！");
+        this.reset();
+        priceDisplay.textContent = "100";
+        loadCocktails(); // 更新畫面
 
-        // 你原有的其他JavaScript代码保持不变
-        
-        // 监听连接状态
-        db.enableNetwork().then(() => {
-            console.log("已连接到Firestore");
-        }).catch(error => {
-            console.error("网络连接失败:", error);
-        });
+      } catch (error) {
+        console.error("儲存錯誤", error);
+        alert("儲存失敗，請稍後再試");
+      }
+    });
 
-        // 你的其他功能代码...
-    </script>
+    // 載入已儲存的酒譜
+    async function loadCocktails() {
+      const list = document.getElementById('custom-list');
+      list.innerHTML = '';
+      const snapshot = await db.collection('cocktails').get();
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        const li = document.createElement('li');
+        li.textContent = `${c.name}（酒精度 ${c.abv}%，價錢 ${c.price} 元）`;
+        list.appendChild(li);
+      });
+    }
+
+    // 初始載入
+    loadCocktails();
+  </script>
 </body>
 </html>
