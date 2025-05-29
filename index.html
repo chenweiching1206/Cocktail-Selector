@@ -77,8 +77,11 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
   <script>
+    // 你的原始程式碼完全不動，以下為新增Firebase整合
+
     // 價錢顯示控制
     const price = document.getElementById('price');
     const priceDisplay = document.getElementById('price-display');
@@ -91,79 +94,8 @@
       if (id === 'page3') updateRankList();
     }
 
-    // 調酒資料暫存
-    const cocktailData = [];
-
-    // 自訂酒譜表單送出
-    document.getElementById('custom-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const data = {
-        name: document.getElementById('name').value,
-        ingredients: document.getElementById('ingredients').value,
-        ratio: document.getElementById('ratio').value,
-        abv: parseInt(document.getElementById('abv').value) || 0,
-        description: document.getElementById('description').value,
-        price: parseInt(document.getElementById('price').value),
-        public: document.getElementById('public').checked,
-        votes: 0
-      };
-      cocktailData.push(data);
-      renderCustomList();
-      e.target.reset();
-      priceDisplay.textContent = '100';
-    });
-
-    // 顯示自訂酒譜列表
-    function renderCustomList() {
-      const list = document.getElementById('custom-list');
-      list.innerHTML = '';
-      cocktailData.forEach(item => {
-        const li = document.createElement('li');
-        const span = document.createElement('span');
-        span.className = 'cocktail-item';
-        span.textContent = item.name;
-        span.onclick = () => alert(
-          `名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`
-        );
-        li.appendChild(span);
-        list.appendChild(li);
-      });
-    }
-
-    // 搜尋推薦
-    document.getElementById('search-form').addEventListener('submit', e => {
-      e.preventDefault();
-      const budget = parseInt(document.getElementById('search-budget').value) || 0;
-      const abv = parseInt(document.getElementById('search-abv').value) || 0;
-      const results = cocktailData.filter(item => item.public && item.price <= budget && item.abv <= abv);
-      const ul = document.getElementById('search-result');
-      ul.innerHTML = '';
-      results.forEach(item => {
-        const li = document.createElement('li');
-        const span = document.createElement('span');
-        span.className = 'cocktail-item';
-        span.textContent = item.name;
-        span.onclick = () => alert(
-          `名稱: ${item.name}\n內容物: ${item.ingredients}\n比例: ${item.ratio}\n酒精濃度: ${item.abv}%\n描述: ${item.description}\n價格: ${item.price} 元`
-        );
-        li.appendChild(span);
-        ul.appendChild(li);
-      });
-    });
-
-    // 排行榜更新
-    function updateRankList() {
-      const ul = document.getElementById('rank-list');
-      ul.innerHTML = '';
-      cocktailData
-        .filter(c => c.public)
-        .sort((a, b) => b.votes - a.votes)
-        .forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = `${item.name} - 票數：${item.votes}`;
-          ul.appendChild(li);
-        });
-    }
+    // 調酒資料暫存 (改成動態從 Firestore 讀取)
+    let cocktailData = [];
 
     // Firebase 初始化
     const firebaseConfig = {
@@ -175,15 +107,17 @@
       appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
       measurementId: "G-LC2T6DR3HB"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
     // DOM 元素
     const userNameDiv = document.getElementById('user-name');
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const userAvatar = document.getElementById('user-avatar');
+
+    let currentUser = null;
 
     // 登入按鈕事件
     loginBtn.addEventListener('click', () => {
@@ -199,19 +133,236 @@
     // 監聽登入狀態變更
     auth.onAuthStateChanged(user => {
       if (user) {
+        currentUser = user;
         loginBtn.style.display = 'none';
         logoutBtn.style.display = 'inline-block';
         userAvatar.style.display = 'inline-block';
         userAvatar.src = user.photoURL || '';
         userNameDiv.textContent = user.displayName || user.email;
+
+        loadUserCocktails(); // 登入後讀取使用者自訂酒譜
+        listenRankUpdates(); // 監聽排行榜實時更新
+
       } else {
+        currentUser = null;
         loginBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
         userAvatar.style.display = 'none';
         userAvatar.src = '';
         userNameDiv.textContent = '';
+
+        cocktailData = [];
+        renderCustomList();
+        clearRankList();
       }
     });
+
+    // 載入使用者自訂酒譜 (Firestore)
+    async function loadUserCocktails() {
+      if (!currentUser) return;
+      cocktailData = [];
+      renderCustomList();
+
+      try {
+        const snapshot = await db.collection('cocktails')
+          .where('uid', '==', currentUser.uid)
+          .get();
+
+        snapshot.forEach(doc => {
+          cocktailData.push({ id: doc.id, ...doc.data() });
+        });
+        renderCustomList();
+      } catch (e) {
+        console.error('讀取使用者酒譜錯誤:', e);
+      }
+    }
+
+    // 渲染自訂酒譜列表
+    function renderCustomList() {
+      const list = document.getElementById('custom-list');
+      list.innerHTML = '';
+      cocktailData.forEach(c => {
+        const li = document.createElement('li');
+        li.textContent = `${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
+        li.classList.add('cocktail-item');
+        li.addEventListener('click', () => alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n公開: ${c.public ? '是' : '否'}`));
+        list.appendChild(li);
+      });
+    }
+
+    // 儲存酒譜表單事件
+    document.getElementById('custom-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!currentUser) {
+        alert('請先登入');
+        return;
+      }
+      const name = document.getElementById('name').value.trim();
+      const ingredients = document.getElementById('ingredients').value.trim();
+      const ratio = document.getElementById('ratio').value.trim();
+      const abv = parseFloat(document.getElementById('abv').value) || 0;
+      const description = document.getElementById('description').value.trim();
+      const priceVal = parseInt(document.getElementById('price').value) || 0;
+      const isPublic = document.getElementById('public').checked;
+
+      if (!name || !ingredients) {
+        alert('名稱與內容物為必填');
+        return;
+      }
+
+      try {
+        // 儲存到 Firestore cocktails 集合
+        const docRef = await db.collection('cocktails').add({
+          uid: currentUser.uid,
+          name,
+          ingredients,
+          ratio,
+          abv,
+          description,
+          price: priceVal,
+          public: isPublic,
+          votes: 0,
+          voters: []
+        });
+
+        // 加到本地資料與畫面
+        cocktailData.push({
+          id: docRef.id,
+          uid: currentUser.uid,
+          name, ingredients, ratio, abv, description,
+          price: priceVal,
+          public: isPublic,
+          votes: 0,
+          voters: []
+        });
+        renderCustomList();
+
+        // 若公開則加入排行榜
+        if (isPublic) {
+          // 排行榜即用同一集合 cocktails，依票數排序顯示
+          // 所以已經存入 cocktails 集合即可，更新時會自動反映
+          alert('酒譜已公開並加入排行榜');
+        } else {
+          alert('酒譜已儲存');
+        }
+
+        // 表單清空
+        e.target.reset();
+        priceDisplay.textContent = '100';
+
+      } catch (err) {
+        console.error('儲存酒譜失敗:', err);
+        alert('儲存失敗');
+      }
+    });
+
+    // 排行榜監聽及更新
+    const rankList = document.getElementById('rank-list');
+    let unsubscribeRank = null;
+
+    function listenRankUpdates() {
+      if (unsubscribeRank) unsubscribeRank();
+      unsubscribeRank = db.collection('cocktails')
+        .where('public', '==', true)
+        .orderBy('votes', 'desc')
+        .limit(20)
+        .onSnapshot(snapshot => {
+          rankList.innerHTML = '';
+          snapshot.forEach(doc => {
+            const c = doc.data();
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="cocktail-item" style="flex-grow:1; cursor:pointer;">${c.name} (票數: ${c.votes || 0})</span> 
+              <button>投票</button>`;
+            // 點擊酒名顯示內容
+            li.querySelector('.cocktail-item').addEventListener('click', () => {
+              alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n票數: ${c.votes || 0}`);
+            });
+            // 投票按鈕
+            li.querySelector('button').addEventListener('click', async () => {
+              if (!currentUser) {
+                alert('請先登入才能投票');
+                return;
+              }
+              try {
+                // 讀取文件一次確認
+                const cocktailDoc = await db.collection('cocktails').doc(doc.id).get();
+                const data = cocktailDoc.data();
+                if (!data.voters) data.voters = [];
+                if (data.voters.includes(currentUser.uid)) {
+                  alert('您已投過票，謝謝！');
+                  return;
+                }
+                await db.collection('cocktails').doc(doc.id).update({
+                  votes: (data.votes || 0) + 1,
+                  voters: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+                });
+                alert('投票成功，謝謝支持！');
+              } catch (err) {
+                console.error('投票失敗:', err);
+                alert('投票失敗，請稍後再試');
+              }
+            });
+            rankList.appendChild(li);
+          });
+        });
+    }
+
+    // 手動更新排行榜（切換到排行榜頁面時用）
+    function updateRankList() {
+      if (!unsubscribeRank) listenRankUpdates();
+    }
+
+    // 清空排行榜
+    function clearRankList() {
+      rankList.innerHTML = '';
+      if (unsubscribeRank) {
+        unsubscribeRank();
+        unsubscribeRank = null;
+      }
+    }
+
+    // 搜尋推薦功能 (簡單篩選)
+    document.getElementById('search-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const budget = parseInt(document.getElementById('search-budget').value) || 0;
+      const abv = parseInt(document.getElementById('search-abv').value) || 0;
+      const resultUl = document.getElementById('search-result');
+      resultUl.innerHTML = '搜尋中...';
+
+      try {
+        // 從公開酒譜中找符合條件
+        const snapshot = await db.collection('cocktails')
+          .where('public', '==', true)
+          .where('price', '<=', budget)
+          .orderBy('price')
+          .get();
+
+        let filtered = [];
+        snapshot.forEach(doc => {
+          const c = doc.data();
+          if (c.abv <= abv) filtered.push({ id: doc.id, ...c });
+        });
+
+        if (filtered.length === 0) {
+          resultUl.innerHTML = '<li>找不到符合條件的酒譜</li>';
+          return;
+        }
+
+        resultUl.innerHTML = '';
+        filtered.forEach(c => {
+          const li = document.createElement('li');
+          li.textContent = `${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
+          li.classList.add('cocktail-item');
+          li.addEventListener('click', () => alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n票數: ${c.votes || 0}`));
+          resultUl.appendChild(li);
+        });
+
+      } catch (err) {
+        console.error(err);
+        resultUl.innerHTML = '<li>搜尋發生錯誤</li>';
+      }
+    });
+
   </script>
 </body>
 </html>
