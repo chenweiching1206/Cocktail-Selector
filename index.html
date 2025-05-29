@@ -1,368 +1,275 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>調酒天地</title>
-  <style>
-    /* 你的 CSS 保持不變 */
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-    body { background: #f4f1ec; color: #333; }
-    header { background: #ffcc00; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    #logo { font-size: 1.8rem; font-weight: bold; }
-    #user-name { margin-top: 10px; font-weight: bold; }
-    #user-controls { display: flex; align-items: center; gap: 1rem; }
-    #login-btn, #logout-btn { padding: 0.5rem 1rem; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    #user-avatar { width: 40px; height: 40px; border-radius: 50%; display: none; }
-    nav { display: flex; justify-content: center; background: #fff9d6; box-shadow: inset 0 -1px 0 #e0dcbf; }
-    nav button { flex: 1; padding: 1rem; border: none; background: none; font-size: 1rem; cursor: pointer; }
-    nav button:hover { background: #ffe577; }
-    .section { display: none; padding: 2rem; max-width: 800px; margin: auto; }
-    .active { display: block; }
-    form { display: flex; flex-direction: column; gap: 1rem; }
-    label { font-weight: bold; display: flex; flex-direction: column; }
-    input, textarea, button[type="submit"] { padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px; }
-    button[type="submit"] { background: #ffcc00; border: none; cursor: pointer; font-weight: bold; }
-    ul li { list-style: none; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-    .bubble { position: absolute; bottom: 0; background: white; border-radius: 50%; opacity: 0.7; animation: rise 5s infinite ease-in; }
-    @keyframes rise { 0% { transform: translateY(0); opacity: 0.7; } 100% { transform: translateY(-300px); opacity: 0; } }
-    .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firestore 监听调试工具</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            color: #d32f2f;
+        }
+        .success {
+            color: #388e3c;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div id="user-name"></div>
-    <div id="logo">調酒天地</div>
-    <div id="user-controls">
-      <img id="user-avatar" src="" alt="頭像" />
-      <button id="login-btn">登入</button>
-      <button id="logout-btn" style="display:none;">登出</button>
+    <h1>Firestore 监听调试工具</h1>
+    
+    <div class="container">
+        <h2>1. 初始化配置</h2>
+        <div>
+            <label for="config">Firebase 配置:</label><br>
+            <textarea id="config" rows="6" cols="80" placeholder='{
+  "apiKey": "YOUR_API_KEY",
+  "authDomain": "YOUR_PROJECT_ID.firebaseapp.com",
+  "projectId": "YOUR_PROJECT_ID",
+  "storageBucket": "YOUR_PROJECT_ID.appspot.com",
+  "messagingSenderId": "YOUR_SENDER_ID",
+  "appId": "YOUR_APP_ID"
+}'></textarea>
+        </div>
+        <button onclick="initializeFirebase()">初始化 Firebase</button>
+        <div id="initStatus"></div>
     </div>
-  </header>
-  <nav>
-    <button onclick="switchPage('page1')">自訂調酒</button>
-    <button onclick="switchPage('page2')">搜尋推薦</button>
-    <button onclick="switchPage('page3')">排行榜</button>
-  </nav>
-  <section id="page1" class="section active">
-    <h2>自訂你的調酒</h2>
-    <form id="custom-form">
-      <label>調酒名稱<input type="text" id="name" required /></label>
-      <label>內容物<input type="text" id="ingredients" required /></label>
-      <label>比例<input type="text" id="ratio" /></label>
-      <label>酒精濃度（%）<input type="number" id="abv" min="0" max="100" /></label>
-      <label>口感描述<textarea id="description" rows="3"></textarea></label>
-      <label>價錢估計
-        <input type="range" id="price" min="100" max="1000" step="50" />
-        <span id="price-display">100</span> 元
-      </label>
-      <label>是否公開<input type="checkbox" id="public" /></label>
-      <button type="submit">儲存酒譜</button>
-    </form>
-    <ul id="custom-list"></ul>
-  </section>
-  <section id="page2" class="section">
-    <h2>搜尋推薦調酒</h2>
-    <form id="search-form">
-      <label>預算（元）<input type="number" id="search-budget" min="100" /></label>
-      <label>酒精濃度（%）<input type="number" id="search-abv" min="0" max="100" /></label>
-      <button type="submit">搜尋推薦</button>
-    </form>
-    <ul id="search-result"></ul>
-  </section>
-  <section id="page3" class="section">
-    <h2>調酒排行榜</h2>
-    <ul id="rank-list"></ul>
-  </section>
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <div class="container">
+        <h2>2. 认证状态</h2>
+        <button onclick="checkAuth()">检查认证状态</button>
+        <div id="authStatus"></div>
+    </div>
 
-  <script>
-    // 你的原始程式碼完全不動，以下為新增Firebase整合
+    <div class="container">
+        <h2>3. 测试监听</h2>
+        <div>
+            <label for="collectionPath">集合路径 (如 "users"):</label>
+            <input type="text" id="collectionPath" placeholder="users">
+            <label for="docId">文档ID (可选):</label>
+            <input type="text" id="docId" placeholder="document_id">
+        </div>
+        <div>
+            <button onclick="startListening()">开始监听</button>
+            <button onclick="stopListening()">停止监听</button>
+            <label>
+                <input type="checkbox" id="forceLongPolling"> 强制使用长轮询
+            </label>
+        </div>
+        <div id="listenStatus"></div>
+        <pre id="listenData"></pre>
+    </div>
 
-    // 價錢顯示控制
-    const price = document.getElementById('price');
-    const priceDisplay = document.getElementById('price-display');
-    price.addEventListener('input', () => priceDisplay.textContent = price.value);
+    <div class="container">
+        <h2>4. 网络诊断</h2>
+        <button onclick="testConnection()">测试连接</button>
+        <div id="connectionStatus"></div>
+    </div>
 
-    // 頁籤切換
-    function switchPage(id) {
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      if (id === 'page3') updateRankList();
-    }
+    <script>
+        // 全局变量
+        let db;
+        let unsubscribe = null;
+        let firebaseApp = null;
 
-    // 調酒資料暫存 (改成動態從 Firestore 讀取)
-    let cocktailData = [];
-
-    // Firebase 初始化
-    const firebaseConfig = {
-      apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
-      authDomain: "cocktail-selector-a1b46.firebaseapp.com",
-      projectId: "cocktail-selector-a1b46",
-      storageBucket: "cocktail-selector-a1b46.appspot.com",
-      messagingSenderId: "213382733661",
-      appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
-      measurementId: "G-LC2T6DR3HB"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    // DOM 元素
-    const userNameDiv = document.getElementById('user-name');
-    const loginBtn = document.getElementById('login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const userAvatar = document.getElementById('user-avatar');
-
-    let currentUser = null;
-
-    // 登入按鈕事件
-    loginBtn.addEventListener('click', () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    });
-
-    // 登出按鈕事件
-    logoutBtn.addEventListener('click', () => {
-      auth.signOut().catch(console.error);
-    });
-
-    // 監聽登入狀態變更
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline-block';
-        userAvatar.style.display = 'inline-block';
-        userAvatar.src = user.photoURL || '';
-        userNameDiv.textContent = user.displayName || user.email;
-
-        loadUserCocktails(); // 登入後讀取使用者自訂酒譜
-        listenRankUpdates(); // 監聽排行榜實時更新
-
-      } else {
-        currentUser = null;
-        loginBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        userAvatar.style.display = 'none';
-        userAvatar.src = '';
-        userNameDiv.textContent = '';
-
-        cocktailData = [];
-        renderCustomList();
-        clearRankList();
-      }
-    });
-
-    // 載入使用者自訂酒譜 (Firestore)
-    async function loadUserCocktails() {
-      if (!currentUser) return;
-      cocktailData = [];
-      renderCustomList();
-
-      try {
-        const snapshot = await db.collection('cocktails')
-          .where('uid', '==', currentUser.uid)
-          .get();
-
-        snapshot.forEach(doc => {
-          cocktailData.push({ id: doc.id, ...doc.data() });
-        });
-        renderCustomList();
-      } catch (e) {
-        console.error('讀取使用者酒譜錯誤:', e);
-      }
-    }
-
-    // 渲染自訂酒譜列表
-    function renderCustomList() {
-      const list = document.getElementById('custom-list');
-      list.innerHTML = '';
-      cocktailData.forEach(c => {
-        const li = document.createElement('li');
-        li.textContent = `${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
-        li.classList.add('cocktail-item');
-        li.addEventListener('click', () => alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n公開: ${c.public ? '是' : '否'}`));
-        list.appendChild(li);
-      });
-    }
-
-    // 儲存酒譜表單事件
-    document.getElementById('custom-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      if (!currentUser) {
-        alert('請先登入');
-        return;
-      }
-      const name = document.getElementById('name').value.trim();
-      const ingredients = document.getElementById('ingredients').value.trim();
-      const ratio = document.getElementById('ratio').value.trim();
-      const abv = parseFloat(document.getElementById('abv').value) || 0;
-      const description = document.getElementById('description').value.trim();
-      const priceVal = parseInt(document.getElementById('price').value) || 0;
-      const isPublic = document.getElementById('public').checked;
-
-      if (!name || !ingredients) {
-        alert('名稱與內容物為必填');
-        return;
-      }
-
-      try {
-        // 儲存到 Firestore cocktails 集合
-        const docRef = await db.collection('cocktails').add({
-          uid: currentUser.uid,
-          name,
-          ingredients,
-          ratio,
-          abv,
-          description,
-          price: priceVal,
-          public: isPublic,
-          votes: 0,
-          voters: []
-        });
-
-        // 加到本地資料與畫面
-        cocktailData.push({
-          id: docRef.id,
-          uid: currentUser.uid,
-          name, ingredients, ratio, abv, description,
-          price: priceVal,
-          public: isPublic,
-          votes: 0,
-          voters: []
-        });
-        renderCustomList();
-
-        // 若公開則加入排行榜
-        if (isPublic) {
-          // 排行榜即用同一集合 cocktails，依票數排序顯示
-          // 所以已經存入 cocktails 集合即可，更新時會自動反映
-          alert('酒譜已公開並加入排行榜');
-        } else {
-          alert('酒譜已儲存');
-        }
-
-        // 表單清空
-        e.target.reset();
-        priceDisplay.textContent = '100';
-
-      } catch (err) {
-        console.error('儲存酒譜失敗:', err);
-        alert('儲存失敗');
-      }
-    });
-
-    // 排行榜監聽及更新
-    const rankList = document.getElementById('rank-list');
-    let unsubscribeRank = null;
-
-    function listenRankUpdates() {
-      if (unsubscribeRank) unsubscribeRank();
-      unsubscribeRank = db.collection('cocktails')
-        .where('public', '==', true)
-        .orderBy('votes', 'desc')
-        .limit(20)
-        .onSnapshot(snapshot => {
-          rankList.innerHTML = '';
-          snapshot.forEach(doc => {
-            const c = doc.data();
-            const li = document.createElement('li');
-            li.innerHTML = `<span class="cocktail-item" style="flex-grow:1; cursor:pointer;">${c.name} (票數: ${c.votes || 0})</span> 
-              <button>投票</button>`;
-            // 點擊酒名顯示內容
-            li.querySelector('.cocktail-item').addEventListener('click', () => {
-              alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n票數: ${c.votes || 0}`);
-            });
-            // 投票按鈕
-            li.querySelector('button').addEventListener('click', async () => {
-              if (!currentUser) {
-                alert('請先登入才能投票');
-                return;
-              }
-              try {
-                // 讀取文件一次確認
-                const cocktailDoc = await db.collection('cocktails').doc(doc.id).get();
-                const data = cocktailDoc.data();
-                if (!data.voters) data.voters = [];
-                if (data.voters.includes(currentUser.uid)) {
-                  alert('您已投過票，謝謝！');
-                  return;
+        // 初始化 Firebase
+        function initializeFirebase() {
+            try {
+                const configText = document.getElementById('config').value.trim();
+                if (!configText) {
+                    throw new Error("请提供 Firebase 配置");
                 }
-                await db.collection('cocktails').doc(doc.id).update({
-                  votes: (data.votes || 0) + 1,
-                  voters: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
-                });
-                alert('投票成功，謝謝支持！');
-              } catch (err) {
-                console.error('投票失敗:', err);
-                alert('投票失敗，請稍後再試');
-              }
-            });
-            rankList.appendChild(li);
-          });
-        });
-    }
-
-    // 手動更新排行榜（切換到排行榜頁面時用）
-    function updateRankList() {
-      if (!unsubscribeRank) listenRankUpdates();
-    }
-
-    // 清空排行榜
-    function clearRankList() {
-      rankList.innerHTML = '';
-      if (unsubscribeRank) {
-        unsubscribeRank();
-        unsubscribeRank = null;
-      }
-    }
-
-    // 搜尋推薦功能 (簡單篩選)
-    document.getElementById('search-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      const budget = parseInt(document.getElementById('search-budget').value) || 0;
-      const abv = parseInt(document.getElementById('search-abv').value) || 0;
-      const resultUl = document.getElementById('search-result');
-      resultUl.innerHTML = '搜尋中...';
-
-      try {
-        // 從公開酒譜中找符合條件
-        const snapshot = await db.collection('cocktails')
-          .where('public', '==', true)
-          .where('price', '<=', budget)
-          .orderBy('price')
-          .get();
-
-        let filtered = [];
-        snapshot.forEach(doc => {
-          const c = doc.data();
-          if (c.abv <= abv) filtered.push({ id: doc.id, ...c });
-        });
-
-        if (filtered.length === 0) {
-          resultUl.innerHTML = '<li>找不到符合條件的酒譜</li>';
-          return;
+                
+                const config = JSON.parse(configText);
+                firebaseApp = firebase.initializeApp(config);
+                
+                // 根据选项决定是否使用长轮询
+                const forceLongPolling = document.getElementById('forceLongPolling').checked;
+                
+                if (forceLongPolling) {
+                    // 使用长轮询替代 WebSocket
+                    db = firebase.firestore(firebaseApp);
+                    db.settings({
+                        experimentalForceLongPolling: true
+                    });
+                } else {
+                    db = firebase.firestore(firebaseApp);
+                }
+                
+                document.getElementById('initStatus').innerHTML = 
+                    '<p class="success">Firebase 初始化成功!</p>' +
+                    '<p>项目ID: ' + config.projectId + '</p>' +
+                    '<p>使用长轮询: ' + forceLongPolling + '</p>';
+                
+                // 启用持久化缓存
+                enablePersistence();
+                
+            } catch (error) {
+                document.getElementById('initStatus').innerHTML = 
+                    '<p class="error">初始化失败: ' + error.message + '</p>';
+                console.error("初始化错误:", error);
+            }
         }
 
-        resultUl.innerHTML = '';
-        filtered.forEach(c => {
-          const li = document.createElement('li');
-          li.textContent = `${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
-          li.classList.add('cocktail-item');
-          li.addEventListener('click', () => alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n票數: ${c.votes || 0}`));
-          resultUl.appendChild(li);
-        });
+        // 启用持久化
+        async function enablePersistence() {
+            try {
+                await db.enablePersistence();
+                console.log("持久化缓存已启用");
+            } catch (err) {
+                console.warn("持久化缓存启用失败:", err);
+            }
+        }
 
-      } catch (err) {
-        console.error(err);
-        resultUl.innerHTML = '<li>搜尋發生錯誤</li>';
-      }
-    });
+        // 检查认证状态
+        function checkAuth() {
+            const auth = firebase.auth();
+            const user = auth.currentUser;
+            
+            if (user) {
+                document.getElementById('authStatus').innerHTML = 
+                    '<p class="success">用户已认证!</p>' +
+                    '<p>用户ID: ' + user.uid + '</p>' +
+                    '<p>邮箱: ' + (user.email || '未提供') + '</p>';
+            } else {
+                document.getElementById('authStatus').innerHTML = 
+                    '<p class="error">用户未认证</p>' +
+                    '<p>你可能需要先登录才能访问受保护的 Firestore 数据</p>';
+            }
+        }
 
-  </script>
+        // 开始监听
+        function startListening() {
+            if (!db) {
+                alert("请先初始化 Firebase");
+                return;
+            }
+            
+            const collectionPath = document.getElementById('collectionPath').value.trim();
+            const docId = document.getElementById('docId').value.trim();
+            
+            if (!collectionPath) {
+                alert("请输入集合路径");
+                return;
+            }
+            
+            try {
+                let ref;
+                if (docId) {
+                    ref = db.collection(collectionPath).doc(docId);
+                } else {
+                    ref = db.collection(collectionPath);
+                }
+                
+                // 停止之前的监听
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+                
+                unsubscribe = ref.onSnapshot({
+                    next: (snapshot) => {
+                        let data;
+                        if (snapshot.docs) {
+                            // 集合查询结果
+                            data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        } else {
+                            // 单个文档结果
+                            data = { id: snapshot.id, ...snapshot.data() };
+                        }
+                        
+                        document.getElementById('listenData').textContent = 
+                            JSON.stringify(data, null, 2);
+                        document.getElementById('listenStatus').innerHTML = 
+                            '<p class="success">监听成功! 数据更新时间: ' + new Date().toLocaleTimeString() + '</p>';
+                    },
+                    error: (error) => {
+                        document.getElementById('listenStatus').innerHTML = 
+                            '<p class="error">监听错误: ' + error.message + '</p>';
+                        console.error("监听错误:", error);
+                    }
+                });
+                
+                document.getElementById('listenStatus').innerHTML = 
+                    '<p>开始监听: ' + collectionPath + (docId ? '/' + docId : '') + '</p>';
+                
+            } catch (error) {
+                document.getElementById('listenStatus').innerHTML = 
+                    '<p class="error">监听设置失败: ' + error.message + '</p>';
+                console.error("监听设置错误:", error);
+            }
+        }
+
+        // 停止监听
+        function stopListening() {
+            if (unsubscribe) {
+                unsubscribe();
+                unsubscribe = null;
+                document.getElementById('listenStatus').innerHTML = 
+                    '<p>监听已停止</p>';
+                document.getElementById('listenData').textContent = '';
+            }
+        }
+
+        // 测试连接
+        function testConnection() {
+            if (!db) {
+                alert("请先初始化 Firebase");
+                return;
+            }
+            
+            document.getElementById('connectionStatus').innerHTML = 
+                '<p>正在测试 Firestore 连接...</p>';
+            
+            // 测试一个小查询
+            db.collection("test").limit(1).get()
+                .then(() => {
+                    document.getElementById('connectionStatus').innerHTML = 
+                        '<p class="success">连接测试成功! Firestore 可访问</p>';
+                })
+                .catch(error => {
+                    document.getElementById('connectionStatus').innerHTML = 
+                        '<p class="error">连接测试失败: ' + error.message + '</p>' +
+                        '<p>可能的原因:</p>' +
+                        '<ul>' +
+                        '<li>网络连接问题</li>' +
+                        '<li>Firestore 安全规则限制</li>' +
+                        '<li>项目配置错误</li>' +
+                        '</ul>';
+                    console.error("连接测试错误:", error);
+                });
+        }
+    </script>
 </body>
 </html>
