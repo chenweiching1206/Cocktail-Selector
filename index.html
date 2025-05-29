@@ -3,273 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firestore 监听调试工具</title>
+    <title>鸡尾酒选择器</title>
+    <!-- 引入Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-analytics-compat.js"></script>
+    
+    <!-- 你的其他样式保持不变 -->
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        button {
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        button:hover {
-            background-color: #3367d6;
-        }
-        pre {
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-        .error {
-            color: #d32f2f;
-        }
-        .success {
-            color: #388e3c;
-        }
+        /* 你原有的所有样式保持不变 */
     </style>
 </head>
 <body>
-    <h1>Firestore 监听调试工具</h1>
+    <!-- 你原有的所有HTML内容保持不变 -->
     
-    <div class="container">
-        <h2>1. 初始化配置</h2>
-        <div>
-            <label for="config">Firebase 配置:</label><br>
-            <textarea id="config" rows="6" cols="80" placeholder='{
-  "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_PROJECT_ID.firebaseapp.com",
-  "projectId": "YOUR_PROJECT_ID",
-  "storageBucket": "YOUR_PROJECT_ID.appspot.com",
-  "messagingSenderId": "YOUR_SENDER_ID",
-  "appId": "YOUR_APP_ID"
-}'></textarea>
-        </div>
-        <button onclick="initializeFirebase()">初始化 Firebase</button>
-        <div id="initStatus"></div>
-    </div>
-
-    <div class="container">
-        <h2>2. 认证状态</h2>
-        <button onclick="checkAuth()">检查认证状态</button>
-        <div id="authStatus"></div>
-    </div>
-
-    <div class="container">
-        <h2>3. 测试监听</h2>
-        <div>
-            <label for="collectionPath">集合路径 (如 "users"):</label>
-            <input type="text" id="collectionPath" placeholder="users">
-            <label for="docId">文档ID (可选):</label>
-            <input type="text" id="docId" placeholder="document_id">
-        </div>
-        <div>
-            <button onclick="startListening()">开始监听</button>
-            <button onclick="stopListening()">停止监听</button>
-            <label>
-                <input type="checkbox" id="forceLongPolling"> 强制使用长轮询
-            </label>
-        </div>
-        <div id="listenStatus"></div>
-        <pre id="listenData"></pre>
-    </div>
-
-    <div class="container">
-        <h2>4. 网络诊断</h2>
-        <button onclick="testConnection()">测试连接</button>
-        <div id="connectionStatus"></div>
-    </div>
-
     <script>
-        // 全局变量
-        let db;
-        let unsubscribe = null;
-        let firebaseApp = null;
+        // 初始化Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb7IehvgRm-b2o_yJ3SkdQDWwjy7ugC6I",
+            authDomain: "cocktail-selector-a1b46.firebaseapp.com",
+            projectId: "cocktail-selector-a1b46",
+            storageBucket: "cocktail-selector-a1b46.appspot.com",
+            messagingSenderId: "213382733661",
+            appId: "1:213382733661:web:3487fa9ebbb2e0c64652b4",
+            measurementId: "G-LC2T6DR3HB"
+        };
 
-        // 初始化 Firebase
-        function initializeFirebase() {
-            try {
-                const configText = document.getElementById('config').value.trim();
-                if (!configText) {
-                    throw new Error("请提供 Firebase 配置");
-                }
-                
-                const config = JSON.parse(configText);
-                firebaseApp = firebase.initializeApp(config);
-                
-                // 根据选项决定是否使用长轮询
-                const forceLongPolling = document.getElementById('forceLongPolling').checked;
-                
-                if (forceLongPolling) {
-                    // 使用长轮询替代 WebSocket
-                    db = firebase.firestore(firebaseApp);
-                    db.settings({
-                        experimentalForceLongPolling: true
-                    });
-                } else {
-                    db = firebase.firestore(firebaseApp);
-                }
-                
-                document.getElementById('initStatus').innerHTML = 
-                    '<p class="success">Firebase 初始化成功!</p>' +
-                    '<p>项目ID: ' + config.projectId + '</p>' +
-                    '<p>使用长轮询: ' + forceLongPolling + '</p>';
-                
-                // 启用持久化缓存
-                enablePersistence();
-                
-            } catch (error) {
-                document.getElementById('initStatus').innerHTML = 
-                    '<p class="error">初始化失败: ' + error.message + '</p>';
-                console.error("初始化错误:", error);
-            }
-        }
+        // 初始化Firebase应用
+        const app = firebase.initializeApp(firebaseConfig);
+        const analytics = firebase.analytics(app);
+        
+        // 初始化Firestore并启用长轮询解决400错误
+        const db = firebase.firestore(app);
+        db.settings({
+            experimentalForceLongPolling: true
+        });
 
-        // 启用持久化
-        async function enablePersistence() {
-            try {
-                await db.enablePersistence();
-                console.log("持久化缓存已启用");
-            } catch (err) {
+        // 启用持久化缓存
+        db.enablePersistence()
+            .catch((err) => {
                 console.warn("持久化缓存启用失败:", err);
-            }
-        }
+            });
 
-        // 检查认证状态
-        function checkAuth() {
-            const auth = firebase.auth();
-            const user = auth.currentUser;
-            
-            if (user) {
-                document.getElementById('authStatus').innerHTML = 
-                    '<p class="success">用户已认证!</p>' +
-                    '<p>用户ID: ' + user.uid + '</p>' +
-                    '<p>邮箱: ' + (user.email || '未提供') + '</p>';
-            } else {
-                document.getElementById('authStatus').innerHTML = 
-                    '<p class="error">用户未认证</p>' +
-                    '<p>你可能需要先登录才能访问受保护的 Firestore 数据</p>';
-            }
-        }
+        // 你原有的其他JavaScript代码保持不变
+        
+        // 监听连接状态
+        db.enableNetwork().then(() => {
+            console.log("已连接到Firestore");
+        }).catch(error => {
+            console.error("网络连接失败:", error);
+        });
 
-        // 开始监听
-        function startListening() {
-            if (!db) {
-                alert("请先初始化 Firebase");
-                return;
-            }
-            
-            const collectionPath = document.getElementById('collectionPath').value.trim();
-            const docId = document.getElementById('docId').value.trim();
-            
-            if (!collectionPath) {
-                alert("请输入集合路径");
-                return;
-            }
-            
-            try {
-                let ref;
-                if (docId) {
-                    ref = db.collection(collectionPath).doc(docId);
-                } else {
-                    ref = db.collection(collectionPath);
-                }
-                
-                // 停止之前的监听
-                if (unsubscribe) {
-                    unsubscribe();
-                }
-                
-                unsubscribe = ref.onSnapshot({
-                    next: (snapshot) => {
-                        let data;
-                        if (snapshot.docs) {
-                            // 集合查询结果
-                            data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        } else {
-                            // 单个文档结果
-                            data = { id: snapshot.id, ...snapshot.data() };
-                        }
-                        
-                        document.getElementById('listenData').textContent = 
-                            JSON.stringify(data, null, 2);
-                        document.getElementById('listenStatus').innerHTML = 
-                            '<p class="success">监听成功! 数据更新时间: ' + new Date().toLocaleTimeString() + '</p>';
-                    },
-                    error: (error) => {
-                        document.getElementById('listenStatus').innerHTML = 
-                            '<p class="error">监听错误: ' + error.message + '</p>';
-                        console.error("监听错误:", error);
-                    }
-                });
-                
-                document.getElementById('listenStatus').innerHTML = 
-                    '<p>开始监听: ' + collectionPath + (docId ? '/' + docId : '') + '</p>';
-                
-            } catch (error) {
-                document.getElementById('listenStatus').innerHTML = 
-                    '<p class="error">监听设置失败: ' + error.message + '</p>';
-                console.error("监听设置错误:", error);
-            }
-        }
-
-        // 停止监听
-        function stopListening() {
-            if (unsubscribe) {
-                unsubscribe();
-                unsubscribe = null;
-                document.getElementById('listenStatus').innerHTML = 
-                    '<p>监听已停止</p>';
-                document.getElementById('listenData').textContent = '';
-            }
-        }
-
-        // 测试连接
-        function testConnection() {
-            if (!db) {
-                alert("请先初始化 Firebase");
-                return;
-            }
-            
-            document.getElementById('connectionStatus').innerHTML = 
-                '<p>正在测试 Firestore 连接...</p>';
-            
-            // 测试一个小查询
-            db.collection("test").limit(1).get()
-                .then(() => {
-                    document.getElementById('connectionStatus').innerHTML = 
-                        '<p class="success">连接测试成功! Firestore 可访问</p>';
-                })
-                .catch(error => {
-                    document.getElementById('connectionStatus').innerHTML = 
-                        '<p class="error">连接测试失败: ' + error.message + '</p>' +
-                        '<p>可能的原因:</p>' +
-                        '<ul>' +
-                        '<li>网络连接问题</li>' +
-                        '<li>Firestore 安全规则限制</li>' +
-                        '<li>项目配置错误</li>' +
-                        '</ul>';
-                    console.error("连接测试错误:", error);
-                });
-        }
+        // 你的其他功能代码...
     </script>
 </body>
 </html>
