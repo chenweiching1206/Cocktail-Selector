@@ -79,8 +79,23 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
   <script>
+    async function deleteCocktail(id) {
+  if (!confirm("確定要刪除這個酒譜嗎？")) return;
+
+  try {
+    await db.collection('cocktails').doc(id).delete();
+    cocktailData = cocktailData.filter(c => c.id !== id);
+    renderCustomList();
+    alert('刪除成功');
+  } catch (err) {
+    console.error('刪除失敗', err);
+    alert('刪除失敗，請稍後再試');
+  }
+}
+
     const price = document.getElementById('price');
     const priceDisplay = document.getElementById('price-display');
+    priceDisplay.textContent = price.value;
     price.addEventListener('input', () => priceDisplay.textContent = price.value);
 
     function switchPage(id) {
@@ -166,17 +181,21 @@
     }
 
     function renderCustomList() {
-      const list = document.getElementById('custom-list');
-      list.innerHTML = '';
-      cocktailData.forEach(c => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span class="cocktail-item">${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)</span>`;
-        li.querySelector('.cocktail-item').addEventListener('click', () => {
-          alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n公開: ${c.public ? '是' : '否'}`);
-        });
-        list.appendChild(li);
-      });
-    }
+  const list = document.getElementById('custom-list');
+  list.innerHTML = '';
+  cocktailData.forEach(c => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="cocktail-item">${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)</span>
+      <button onclick="deleteCocktail('${c.id}')">刪除</button>
+    `;
+    li.querySelector('.cocktail-item').addEventListener('click', () => {
+      alert(`調酒名稱: ${c.name}\n內容物: ${c.ingredients}\n比例: ${c.ratio}\n酒精濃度: ${c.abv}%\n口感: ${c.description}\n價錢: ${c.price}元\n公開: ${c.public ? '是' : '否'}`);
+    });
+    list.appendChild(li);
+  });
+}
+
 
     document.getElementById('custom-form').addEventListener('submit', async e => {
       e.preventDefault();
