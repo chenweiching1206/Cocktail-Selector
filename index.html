@@ -266,11 +266,34 @@
         return;
       }
       searchResult.forEach(c => {
-        const li = document.createElement('li');
-        li.textContent = `${c.name} (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
-        ul.appendChild(li);
-      });
-    });
+  const li = document.createElement('li');
+
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = c.name;
+  nameSpan.style.color = '#0077cc';
+  nameSpan.style.textDecoration = 'underline';
+  nameSpan.style.cursor = 'pointer';
+
+  nameSpan.addEventListener('click', () => {
+    alert(
+      `調酒名稱: ${c.name}\n` +
+      `內容物: ${c.ingredients}\n` +
+      `比例: ${c.ratio}\n` +
+      `酒精濃度: ${c.abv}%\n` +
+      `口感: ${c.description}\n` +
+      `價錢: ${c.price}元\n` +
+      `公開: ${c.public ? '是' : '否'}`
+    );
+  });
+
+  li.appendChild(nameSpan);
+
+  const infoSpan = document.createElement('span');
+  infoSpan.textContent = ` (酒精度: ${c.abv}%, 價錢: ${c.price}元)`;
+  li.appendChild(infoSpan);
+
+  ul.appendChild(li);
+});
 
     // 排行榜區，監聽所有公開酒譜依 votes 排序
     let rankUnsub = null;
@@ -284,6 +307,29 @@
     .onSnapshot(snapshot => {
       const rankList = document.getElementById('rank-list');
       rankList.innerHTML = '';
+const nameSpan = document.createElement('span');
+nameSpan.textContent = c.name;
+nameSpan.style.color = '#0077cc';
+nameSpan.style.textDecoration = 'underline';
+nameSpan.style.cursor = 'pointer';
+
+nameSpan.addEventListener('click', () => {
+  alert(
+    `調酒名稱: ${c.name}\n` +
+    `內容物: ${c.ingredients}\n` +
+    `比例: ${c.ratio}\n` +
+    `酒精濃度: ${c.abv}%\n` +
+    `口感: ${c.description}\n` +
+    `價錢: ${c.price}元\n` +
+    `公開: ${c.public ? '是' : '否'}`
+  );
+});
+
+const voteInfoSpan = document.createElement('span');
+voteInfoSpan.textContent = ` - 票數: ${c.votes}`;
+
+li.appendChild(nameSpan);
+li.appendChild(voteInfoSpan);
 
       snapshot.forEach(doc => {
         const c = doc.data();
@@ -291,21 +337,7 @@
 
         const li = document.createElement('li');
 
-        li.innerHTML = `
-          <span>${c.name} - 票數: ${c.votes}</span>
-          <button class="vote-btn" data-id="${doc.id}" style="
-            margin-left: 10px; 
-            background-color: ${hasVoted ? '#888888' : '#ffcc00'};
-            color: ${hasVoted ? '#ffffff' : '#000000'};
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-          ">
-            ${hasVoted ? '取消投票' : '投票'}
-          </button>
-        `;
-
+        
         rankList.appendChild(li);
       });
 
