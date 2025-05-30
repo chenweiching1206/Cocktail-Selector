@@ -275,23 +275,83 @@
     // 排行榜區，監聽所有公開酒譜依 votes 排序
     let rankUnsub = null;
     function listenRankUpdates() {
-      if (rankUnsub) rankUnsub();
+  if (rankUnsub) rankUnsub();
 
-      rankUnsub = db.collection('cocktails')
-        .where('public', '==', true)
-        .orderBy('votes', 'desc')
-        .limit(10)
-        .onSnapshot(snapshot => {
-          const rankList = document.getElementById('rank-list');
-          rankList.innerHTML = '';
-          snapshot.forEach(doc => {
-            const c = doc.data();
-            const li = document.createElement('li');
-            li.textContent = `${c.name} - 票數: ${c.votes}`;
-            rankList.appendChild(li);
-          });
+  rankUnsub = db.collection('cocktails')
+    .where('public', '==', true)
+    .orderBy('votes', 'desc')
+    .limit(10)
+    .onSnapshot(snapshot => {
+      const rankList = document.getElementById('rank-list');
+      rankList.innerHTML = '';
+
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        const hasVoted = currentUser && c.voters && c.voters.includes(currentUser.uid);
+
+        const li = document.createElement('li');
+
+        li.innerHTML = `
+          <span>${c.name} - 票數: ${c.votes}</span>
+          <button class="vote-btn" data-id="${doc.id}" style="
+            margin-left: 10px; 
+            background-color: ${hasVoted ? '#888888' : '#ffcc00'};
+            color: ${hasVoted ? '#ffffff' : '#000000'};
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+          ">
+            ${hasVoted ? '取消投票' : '投票'}
+          </button>
+        `;
+
+        rankList.appendChild(li);
+      });
+
+      document.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.disabled = !currentUser; // 未登入禁用
+
+        btn.addEventListener('click', async () => {
+          if (!currentUser) {
+            alert('請先登入才能投票');
+            return;
+          }
+
+          const cocktailId = btn.dataset.id;
+          const userId = currentUser.uid;
+          const docRef = db.collection('cocktails').doc(cocktailId);
+
+          try {
+            await db.runTransaction(async (transaction) => {
+              const docSnap = await transaction.get(docRef);
+              if (!docSnap.exists) throw '酒譜不存在';
+
+              const data = docSnap.data();
+              let voters = data.voters || [];
+              let votes = data.votes || 0;
+
+              if (voters.includes(userId)) {
+                // 取消投票
+                voters = voters.filter(uid => uid !== userId);
+                votes = Math.max(0, votes - 1);
+              } else {
+                // 投票
+                voters.push(userId);
+                votes += 1;
+              }
+
+              transaction.update(docRef, { voters, votes });
+            });
+          } catch (err) {
+            console.error('投票或取消投票失敗:', err);
+            alert('操作失敗，請稍後再試');
+          }
         });
-    }
+      });
+    });
+}
+
     function clearRankList() {
       if (rankUnsub) {
         rankUnsub();
