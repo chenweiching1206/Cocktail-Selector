@@ -195,6 +195,99 @@
     list.appendChild(li);
   });
 }
+let rankUnsub = null;
+
+function listenRankUpdates() {
+  if (rankUnsub) rankUnsub();
+
+  rankUnsub = db.collection('cocktails')
+    .where('public', '==', true)
+    .orderBy('votes', 'desc')
+    .limit(10)
+    .onSnapshot(snapshot => {
+      const rankList = document.getElementById('rank-list');
+      rankList.innerHTML = '';
+
+      snapshot.forEach(doc => {
+        const c = doc.data();
+        const id = doc.id;
+        const hasVoted = currentUser && c.voters && c.voters.includes(currentUser.uid);
+
+        const li = document.createElement('li');
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = c.name;
+        nameSpan.style.color = '#0077cc';
+        nameSpan.style.textDecoration = 'underline';
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.addEventListener('click', () => {
+          alert(
+            `調酒名稱: ${c.name}\n` +
+            `內容物: ${c.ingredients}\n` +
+            `比例: ${c.ratio}\n` +
+            `酒精濃度: ${c.abv}%\n` +
+            `口感: ${c.description}\n` +
+            `價錢: ${c.price}元\n` +
+            `公開: ${c.public ? '是' : '否'}\n` +
+            `票數: ${c.votes}`
+          );
+        });
+
+        const voteInfo = document.createElement('span');
+        voteInfo.textContent = ` - 票數: ${c.votes}`;
+
+        const voteBtn = document.createElement('button');
+        voteBtn.textContent = hasVoted ? '取消投票' : '投票';
+        voteBtn.classList.add('vote-btn');
+        voteBtn.dataset.id = id;
+        voteBtn.disabled = !currentUser;
+
+        li.appendChild(nameSpan);
+        li.appendChild(voteInfo);
+        li.appendChild(voteBtn);
+
+        rankList.appendChild(li);
+      });
+
+      document.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!currentUser) {
+            alert('請先登入才能投票');
+            return;
+          }
+
+          const cocktailId = btn.dataset.id;
+          const userId = currentUser.uid;
+          const docRef = db.collection('cocktails').doc(cocktailId);
+
+          try {
+            await db.runTransaction(async (transaction) => {
+              const docSnap = await transaction.get(docRef);
+              if (!docSnap.exists) throw '酒譜不存在';
+
+              const data = docSnap.data();
+              let voters = data.voters || [];
+              let votes = data.votes || 0;
+
+              if (voters.includes(userId)) {
+                voters = voters.filter(uid => uid !== userId);
+                votes = Math.max(0, votes - 1);
+              } else {
+                voters.push(userId);
+                votes += 1;
+              }
+
+              transaction.update(docRef, { voters, votes });
+            });
+          } catch (err) {
+            console.error('投票或取消投票失敗:', err);
+            alert('操作失敗，請稍後再試');
+          }
+        });
+      });
+    });
+}
+
 
 
     document.getElementById('custom-form').addEventListener('submit', async e => {
@@ -296,93 +389,7 @@
 });
 
     // 排行榜區，監聽所有公開酒譜依 votes 排序
-    let rankUnsub = null;
-    function listenRankUpdates() {
-  if (rankUnsub) rankUnsub();
-
-  rankUnsub = db.collection('cocktails')
-    .where('public', '==', true)
-    .orderBy('votes', 'desc')
-    .limit(10)
-    .onSnapshot(snapshot => {
-      const rankList = document.getElementById('rank-list');
-      rankList.innerHTML = '';
-const nameSpan = document.createElement('span');
-nameSpan.textContent = c.name;
-nameSpan.style.color = '#0077cc';
-nameSpan.style.textDecoration = 'underline';
-nameSpan.style.cursor = 'pointer';
-
-nameSpan.addEventListener('click', () => {
-  alert(
-    `調酒名稱: ${c.name}\n` +
-    `內容物: ${c.ingredients}\n` +
-    `比例: ${c.ratio}\n` +
-    `酒精濃度: ${c.abv}%\n` +
-    `口感: ${c.description}\n` +
-    `價錢: ${c.price}元\n` +
-    `公開: ${c.public ? '是' : '否'}`
-  );
-});
-
-const voteInfoSpan = document.createElement('span');
-voteInfoSpan.textContent = ` - 票數: ${c.votes}`;
-
-li.appendChild(nameSpan);
-li.appendChild(voteInfoSpan);
-
-      snapshot.forEach(doc => {
-        const c = doc.data();
-        const hasVoted = currentUser && c.voters && c.voters.includes(currentUser.uid);
-
-        const li = document.createElement('li');
-
-        
-        rankList.appendChild(li);
-      });
-
-      document.querySelectorAll('.vote-btn').forEach(btn => {
-        btn.disabled = !currentUser; // 未登入禁用
-
-        btn.addEventListener('click', async () => {
-          if (!currentUser) {
-            alert('請先登入才能投票');
-            return;
-          }
-
-          const cocktailId = btn.dataset.id;
-          const userId = currentUser.uid;
-          const docRef = db.collection('cocktails').doc(cocktailId);
-
-          try {
-            await db.runTransaction(async (transaction) => {
-              const docSnap = await transaction.get(docRef);
-              if (!docSnap.exists) throw '酒譜不存在';
-
-              const data = docSnap.data();
-              let voters = data.voters || [];
-              let votes = data.votes || 0;
-
-              if (voters.includes(userId)) {
-                // 取消投票
-                voters = voters.filter(uid => uid !== userId);
-                votes = Math.max(0, votes - 1);
-              } else {
-                // 投票
-                voters.push(userId);
-                votes += 1;
-              }
-
-              transaction.update(docRef, { voters, votes });
-            });
-          } catch (err) {
-            console.error('投票或取消投票失敗:', err);
-            alert('操作失敗，請稍後再試');
-          }
-        });
-      });
-    });
-}
+    
 
     function clearRankList() {
       if (rankUnsub) {
