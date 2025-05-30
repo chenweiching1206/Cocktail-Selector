@@ -26,6 +26,27 @@
     .bubble { position: absolute; bottom: 0; background: white; border-radius: 50%; opacity: 0.7; animation: rise 5s infinite ease-in; }
     @keyframes rise { 0% { transform: translateY(0); opacity: 0.7; } 100% { transform: translateY(-300px); opacity: 0; } }
     .cocktail-item { cursor: pointer; color: #0077cc; text-decoration: underline; flex-grow: 1; }
+    .bubble {
+  position: absolute;
+  bottom: -100px;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: rise 10s infinite ease-in;
+  z-index: 0;
+}
+
+@keyframes rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-120vh);
+    opacity: 0;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -73,6 +94,7 @@
     <h2>調酒排行榜</h2>
     <ul id="rank-list"></ul>
   </section>
+<div id="bubble-container"></div>
 
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
@@ -403,6 +425,22 @@ function listenRankUpdates() {
       if (currentUser) listenRankUpdates();
       else clearRankList();
     }
+function createBubble() {
+  const bubble = document.createElement('div');
+  const size = Math.random() * 20 + 10; // 泡泡大小 10~30px
+  bubble.classList.add('bubble');
+  bubble.style.width = `${size}px`;
+  bubble.style.height = `${size}px`;
+  bubble.style.left = `${Math.random() * 100}%`;
+  bubble.style.animationDuration = `${Math.random() * 5 + 5}s`;
+  document.getElementById('bubble-container').appendChild(bubble);
+
+  // 移除泡泡以避免記憶體暴漲
+  setTimeout(() => bubble.remove(), 10000);
+}
+
+// 每隔 300ms 生成一顆泡泡
+setInterval(createBubble, 300);
 
   </script>
 </body>
