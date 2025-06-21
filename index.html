@@ -183,24 +183,27 @@
       }
     });
 
-    async function loadUserCocktails() {
-      if (!currentUser) return;
-      cocktailData = [];
-      renderCustomList();
+async function loadPublicCocktails() {
+  cocktailData = [];
+  renderCustomList();
 
-      try {
-        const snapshot = await db.collection('cocktails')
-          .where('uid', '==', currentUser.uid)
-          .get();
+  try {
+    const snapshot = await db.collection('cocktails')
+      .where('is_public', '==', true) // 抓所有公開酒譜
+      .get();
 
-        snapshot.forEach(doc => {
-          cocktailData.push({ id: doc.id, ...doc.data() });
-        });
-        renderCustomList();
-      } catch (e) {
-        console.error('讀取使用者酒譜錯誤:', e);
-      }
-    }
+    snapshot.forEach(doc => {
+      cocktailData.push({ id: doc.id, ...doc.data() });
+    });
+
+    renderCustomList();
+  } catch (e) {
+    console.error('讀取公開酒譜錯誤:', e);
+  }
+}
+
+
+
 
     function renderCustomList() {
   const list = document.getElementById('custom-list');
